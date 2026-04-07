@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MyLists — Personal Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0a0c14;
+  --bg-secondary: #111420;
+  --bg-card: #161b2e;
+  --bg-card-hover: #1d2340;
+  --bg-modal: #12162a;
+  --accent: #3b82f6;
+  --accent-glow: rgba(59,130,246,0.35);
+  --accent-light: #60a5fa;
+  --accent-dim: rgba(59,130,246,0.15);
+  --needs-color: #f59e0b;
+  --wants-color: #ec4899;
+  --shopping-color: #10b981;
+  --bucket-color: #8b5cf6;
+  --text-primary: #e8eaf6;
+  --text-secondary: #8892b0;
+  --text-muted: #4a5580;
+  --border: rgba(59,130,246,0.15);
+  --border-bright: rgba(59,130,246,0.4);
+  --danger: #ef4444;
+  --success: #22c55e;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 24px rgba(59,130,246,0.2);
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body: 'Nunito', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-body); font-size: 15px; overflow-x: hidden; }
+body { min-height: 100vh; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+/* ─── SCREENS ─── */
+.screen { display: none; min-height: 100vh; padding: 20px; animation: fadeIn 0.3s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+/* ─── TOP BAR ─── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(10px);
+}
+.topbar-title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; letter-spacing: 2px; color: var(--accent-light); }
+.topbar-actions { display: flex; gap: 10px; }
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 50px; border: none;
+  font-family: var(--font-body); font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 14px var(--accent-glow); }
+.btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
+.btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-bright); }
+.btn-secondary:hover { background: var(--bg-card-hover); border-color: var(--accent); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #16a34a; }
+.btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text-primary); border-color: var(--border-bright); }
+.btn-sm { padding: 7px 14px; font-size: 0.82rem; }
+.btn-icon { padding: 10px; min-width: 42px; justify-content: center; }
+.btn-back { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-back:hover { color: var(--accent-light); border-color: var(--accent); }
+
+/* ─── DASHBOARD GRID ─── */
+.dashboard-header { text-align: center; padding: 30px 10px 20px; }
+.dashboard-header h1 { font-family: var(--font-display); font-size: 2.8rem; font-weight: 700; letter-spacing: 3px; background: linear-gradient(135deg, var(--accent-light), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.dashboard-header p { color: var(--text-secondary); margin-top: 6px; font-size: 0.95rem; }
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin: 20px 0; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px; text-align: center; }
+.stat-card .stat-val { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--accent-light); }
+.stat-card .stat-label { color: var(--text-secondary); font-size: 0.8rem; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+/* ─── LIST BUTTONS ─── */
+.list-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin: 24px 0; }
+.list-btn {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 28px 20px;
+  cursor: pointer; transition: all 0.25s ease;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  text-align: center; position: relative; overflow: hidden;
+}
+.list-btn::before { content:''; position:absolute; inset:0; opacity:0; transition:opacity 0.25s; }
+.list-btn:hover { transform: translateY(-3px); box-shadow: var(--shadow-glow); }
+.list-btn.needs { border-color: rgba(245,158,11,0.3); }
+.list-btn.needs::before { background: radial-gradient(circle at 50% 0%, rgba(245,158,11,0.08), transparent 70%); }
+.list-btn.needs:hover { border-color: var(--needs-color); }
+.list-btn.needs:hover::before { opacity:1; }
+.list-btn.wants { border-color: rgba(236,72,153,0.3); }
+.list-btn.wants::before { background: radial-gradient(circle at 50% 0%, rgba(236,72,153,0.08), transparent 70%); }
+.list-btn.wants:hover { border-color: var(--wants-color); }
+.list-btn.wants:hover::before { opacity:1; }
+.list-btn.shopping { border-color: rgba(16,185,129,0.3); }
+.list-btn.shopping::before { background: radial-gradient(circle at 50% 0%, rgba(16,185,129,0.08), transparent 70%); }
+.list-btn.shopping:hover { border-color: var(--shopping-color); }
+.list-btn.shopping:hover::before { opacity:1; }
+.list-btn.bucket { border-color: rgba(139,92,246,0.3); }
+.list-btn.bucket::before { background: radial-gradient(circle at 50% 0%, rgba(139,92,246,0.08), transparent 70%); }
+.list-btn.bucket:hover { border-color: var(--bucket-color); }
+.list-btn.bucket:hover::before { opacity:1; }
+.list-btn-emoji { font-size: 2.8rem; line-height: 1; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)); }
+.list-btn-label { font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; letter-spacing: 1.5px; }
+.list-btn.needs .list-btn-label { color: var(--needs-color); }
+.list-btn.wants .list-btn-label { color: var(--wants-color); }
+.list-btn.shopping .list-btn-label { color: var(--shopping-color); }
+.list-btn.bucket .list-btn-label { color: var(--bucket-color); }
+.list-btn-count { font-size: 0.82rem; color: var(--text-secondary); background: var(--bg-primary); border-radius: 20px; padding: 3px 12px; }
+
+/* ─── ACTION ROW ─── */
+.action-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 20px 0; }
+
+/* ─── LIST DASHBOARD ─── */
+.list-dashboard-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.list-dashboard-title { font-family: var(--font-display); font-size: 2rem; font-weight: 700; letter-spacing: 2px; }
+.list-actions-bar { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
+
+/* ─── CHART ─── */
+.chart-container { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 18px; }
+.chart-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 14px; }
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-label { width: 100px; font-size: 0.82rem; color: var(--text-secondary); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+.bar-track { flex: 1; height: 14px; background: var(--bg-primary); border-radius: 7px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 7px; transition: width 0.6s ease; }
+.bar-val { font-size: 0.8rem; color: var(--text-secondary); width: 50px; text-align: left; flex-shrink: 0; }
+.donut-row { display: flex; align-items: center; justify-content: center; gap: 30px; flex-wrap: wrap; }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── ENTRIES LIST ─── */
+.entries-list { display: flex; flex-direction: column; gap: 10px; }
+.entry-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 16px;
+  display: flex; align-items: flex-start; gap: 12px;
+  cursor: pointer; transition: all 0.2s;
+}
+.entry-item:hover { border-color: var(--border-bright); background: var(--bg-card-hover); }
+.entry-checkbox { width: 18px; height: 18px; border-radius: 4px; border: 2px solid var(--border-bright); appearance: none; -webkit-appearance: none; cursor: pointer; flex-shrink: 0; margin-top: 2px; background: transparent; transition: all 0.15s; }
+.entry-checkbox:checked { background: var(--accent); border-color: var(--accent); }
+.entry-checkbox:checked::after { content: '✓'; display: block; color: white; font-size: 11px; text-align: center; line-height: 14px; }
+.entry-content { flex: 1; min-width: 0; }
+.entry-title { font-weight: 600; font-size: 0.95rem; }
+.entry-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.entry-tag { font-size: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 20px; padding: 2px 10px; color: var(--text-secondary); }
+.entry-price { color: var(--success); font-weight: 600; }
+.entry-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+  z-index: 100; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+.modal {
+  background: var(--bg-modal); border: 1px solid var(--border-bright);
+  border-radius: var(--radius); width: 100%; max-width: 520px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: var(--shadow), var(--shadow-glow);
+}
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
+.modal-title { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; letter-spacing: 1px; }
+.modal-close { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.4rem; padding: 4px; line-height: 1; transition: color 0.15s; }
+.modal-close:hover { color: var(--text-primary); }
+.modal-body { padding: 20px 24px 24px; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding: 0 24px 20px; flex-wrap: wrap; }
+
+/* ─── FORM ─── */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 6px; }
+.form-input, .form-textarea, .form-select {
+  width: 100%; background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  color: var(--text-primary); font-family: var(--font-body); font-size: 0.92rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-select option { background: var(--bg-modal); }
+
+/* ─── CHAT ─── */
+.chat-container { display: flex; flex-direction: column; height: 65vh; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.chat-msg { max-width: 80%; padding: 12px 16px; border-radius: 16px; font-size: 0.9rem; line-height: 1.5; }
+.chat-msg.user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.chat-msg.assistant { background: var(--bg-card); border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; color: var(--text-primary); }
+.chat-msg.thinking { color: var(--text-secondary); font-style: italic; }
+.chat-input-row { display: flex; gap: 10px; padding: 14px 0 0; border-top: 1px solid var(--border); }
+.chat-input-row input { flex: 1; }
+.gemini-key-row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; padding: 12px; background: var(--bg-primary); border-radius: var(--radius-sm); border: 1px solid var(--border); }
+.gemini-key-row input { flex: 1; }
+.gemini-key-row label { font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; }
+
+/* ─── DB MANAGEMENT ─── */
+.db-section { margin-bottom: 20px; }
+.db-section-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.db-list-checkboxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.db-checkbox-item { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--bg-primary); border-radius: var(--radius-sm); cursor: pointer; }
+.db-checkbox-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+
+/* ─── DONUT SVG ─── */
+.donut-svg { filter: drop-shadow(0 0 8px rgba(0,0,0,0.4)); }
+
+/* ─── SEARCH ─── */
+.search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+.search-bar input { flex: 1; }
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.filter-chip { padding: 5px 14px; border-radius: 50px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); transition: all 0.15s; }
+.filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ─── TOAST ─── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--bg-card); border: 1px solid var(--border-bright);
+  border-radius: 50px; padding: 12px 24px; font-size: 0.88rem; font-weight: 600;
+  box-shadow: var(--shadow); z-index: 200; transition: transform 0.3s ease;
+  pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.success { border-color: var(--success); color: var(--success); }
+#toast.error { border-color: var(--danger); color: var(--danger); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 600px) {
+  .screen { padding: 12px; }
+  .topbar { padding: 12px 14px; }
+  .topbar-title { font-size: 1.3rem; }
+  .list-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .list-btn { padding: 20px 14px; }
+  .list-btn-emoji { font-size: 2.2rem; }
+  .list-btn-label { font-size: 1.1rem; }
+  .dashboard-header h1 { font-size: 2rem; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .modal { max-height: 95vh; }
+  .donut-row { flex-direction: column; gap: 16px; }
+  .btn { padding: 9px 16px; font-size: 0.85rem; }
+}
+
+/* ─── EMPTY STATE ─── */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+.empty-state p { font-size: 0.95rem; }
+
+/* ─── PROGRESS BAR ─── */
+.progress-bar-container { background: var(--bg-primary); border-radius: 8px; height: 8px; overflow: hidden; flex: 1; }
+.progress-bar-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--bucket-color), #a78bfa); transition: width 0.5s ease; }
+
+/* ─── CHECKED ENTRY ─── */
+.entry-item.checked { opacity: 0.5; }
+.entry-item.checked .entry-title { text-decoration: line-through; }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ═══════════ MAIN DASHBOARD ═══════════ -->
+<div id="screen-main" class="screen active">
+  <div class="topbar">
+    <span class="topbar-title">⚡ MYLISTS</span>
+    <div class="topbar-actions">
+      <button class="btn btn-secondary btn-sm" onclick="openModal('modal-chat')">💬 Gemini</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-db')">🗄️ DB</button>
+    </div>
+  </div>
+  <div style="max-width:900px;margin:0 auto;">
+    <div class="dashboard-header">
+      <h1>PERSONAL LISTS</h1>
+      <p>Your organized life, all in one place</p>
+    </div>
+    <div class="stats-row" id="main-stats"></div>
+    <div style="margin:10px 0 6px;font-family:var(--font-display);font-size:0.85rem;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;">SELECT A LIST</div>
+    <div class="list-grid">
+      <div class="list-btn needs" onclick="openList('needs')">
+        <div class="list-btn-emoji">🛒</div>
+        <div class="list-btn-label">NEEDS</div>
+        <div class="list-btn-count" id="count-needs">0 items</div>
+      </div>
+      <div class="list-btn wants" onclick="openList('wants')">
+        <div class="list-btn-emoji">💝</div>
+        <div class="list-btn-label">WANTS</div>
+        <div class="list-btn-count" id="count-wants">0 items</div>
+      </div>
+      <div class="list-btn shopping" onclick="openList('shopping')">
+        <div class="list-btn-emoji">🏪</div>
+        <div class="list-btn-label">SHOPPING</div>
+        <div class="list-btn-count" id="count-shopping">0 items</div>
+      </div>
+      <div class="list-btn bucket" onclick="openList('bucket')">
+        <div class="list-btn-emoji">🪣</div>
+        <div class="list-btn-label">BUCKET</div>
+        <div class="list-btn-count" id="count-bucket">0 items</div>
+      </div>
+    </div>
+    <div class="chart-container" style="margin-top:24px;">
+      <div class="chart-title">📊 Lists Overview</div>
+      <div class="bar-chart" id="main-chart"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ LIST DASHBOARD (shared) ═══════════ -->
+<div id="screen-list" class="screen">
+  <div class="topbar">
+    <span class="topbar-title" id="list-topbar-title">LIST</span>
+    <button class="btn btn-back btn-sm" onclick="goToMain()">← Dashboard</button>
+  </div>
+  <div style="max-width:860px;margin:0 auto;padding-top:10px;">
+    <div class="stats-row" id="list-stats"></div>
+    <div class="list-actions-bar">
+      <button class="btn btn-primary" onclick="openAddEntry()">＋ Add Entry</button>
+      <button class="btn btn-secondary" onclick="toggleHistoryView()">📋 View History</button>
+    </div>
+    <div id="list-charts"></div>
+    <div id="list-history" style="display:none;">
+      <div class="search-bar">
+        <input type="text" class="form-input" id="history-search" placeholder="🔍 Search entries..." oninput="renderHistory()">
+      </div>
+      <div class="filter-row" id="filter-row"></div>
+      <div class="entries-list" id="entries-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: ADD/EDIT ENTRY ═══════════ -->
+<div class="modal-overlay" id="modal-entry">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="entry-modal-title">Add Entry</span>
+      <button class="modal-close" onclick="closeModal('modal-entry')">✕</button>
+    </div>
+    <div class="modal-body" id="entry-form-body"></div>
+    <div class="modal-footer" id="entry-modal-footer"></div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: GEMINI CHAT ═══════════ -->
+<div class="modal-overlay" id="modal-chat">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <span class="modal-title">💬 Chat with Gemini</span>
+      <button class="modal-close" onclick="closeModal('modal-chat')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="gemini-key-row">
+        <label>API Key:</label>
+        <input type="password" class="form-input" id="gemini-api-key" placeholder="Paste your Gemini API key…" style="padding:7px 12px;">
+        <button class="btn btn-sm btn-secondary" onclick="saveGeminiKey()">Save</button>
+      </div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-msg assistant">👋 Hi! I'm Gemini. Ask me anything, or type <strong>/lists</strong> to include your list data in the context.</div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" class="form-input" id="chat-input" placeholder="Ask Gemini…" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="btn btn-primary btn-sm" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: DB MANAGEMENT ═══════════ -->
+<div class="modal-overlay" id="modal-db">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <span class="modal-title">🗄️ Database Management</span>
+      <button class="modal-close" onclick="closeModal('modal-db')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="db-section">
+        <div class="db-section-title">📤 Export to CSV</div>
+        <div class="db-list-checkboxes" id="export-checkboxes"></div>
+        <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="selectAllExport(true)">Select All</button>
+          <button class="btn btn-ghost btn-sm" onclick="selectAllExport(false)">Deselect</button>
+          <button class="btn btn-success btn-sm" style="margin-left:auto;" onclick="exportSelected()">⬇ Export Selected</button>
+        </div>
+      </div>
+      <div class="db-section">
+        <div class="db-section-title">📥 Import from CSV</div>
+        <div class="form-group">
+          <label class="form-label">Select List to Import Into</label>
+          <select class="form-select" id="import-list-select">
+            <option value="needs">Needs</option>
+            <option value="wants">Wants</option>
+            <option value="shopping">Shopping</option>
+            <option value="bucket">Bucket</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Choose CSV File</label>
+          <input type="file" accept=".csv" id="import-file-input" class="form-input" style="padding:8px;">
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="importCSV()">⬆ Import CSV</button>
+          <span style="font-size:0.78rem;color:var(--text-muted);">Duplicate entries will be skipped.</span>
+        </div>
+      </div>
+      <div class="db-section">
+        <div class="db-section-title" style="color:var(--danger);">⚠️ Danger Zone</div>
+        <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑️ Clear ALL Data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  DATA LAYER
+// ═══════════════════════════════════════════════════════
+const LISTS = ['needs','wants','shopping','bucket'];
+const LIST_META = {
+  needs:    { label:'NEEDS',    emoji:'🛒', color:'var(--needs-color)',    hex:'#f59e0b' },
+  wants:    { label:'WANTS',    emoji:'💝', color:'var(--wants-color)',    hex:'#ec4899' },
+  shopping: { label:'SHOPPING', emoji:'🏪', color:'var(--shopping-color)', hex:'#10b981' },
+  bucket:   { label:'BUCKET',   emoji:'🪣', color:'var(--bucket-color)',   hex:'#8b5cf6' },
+};
+
+function getData(list) {
+  try { return JSON.parse(localStorage.getItem('mylists_'+list) || '[]'); } catch { return []; }
+}
+function saveData(list, arr) {
+  localStorage.setItem('mylists_'+list, JSON.stringify(arr));
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ═══════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════
+let currentList = null;
+let historyVisible = false;
+let editingId = null;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goToMain() {
+  currentList = null;
+  historyVisible = false;
+  showScreen('main');
+  renderMain();
+}
+
+function openList(list) {
+  currentList = list;
+  historyVisible = false;
+  showScreen('list');
+  renderListDashboard();
+}
+
+// ═══════════════════════════════════════════════════════
+//  MAIN DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderMain() {
+  const totals = {};
+  let grand = 0;
+  LISTS.forEach(l => { totals[l] = getData(l).length; grand += totals[l]; });
+
+  // counts on buttons
+  LISTS.forEach(l => {
+    document.getElementById('count-'+l).textContent = totals[l]+' item'+(totals[l]!==1?'s':'');
+  });
+
+  // stats row
+  const prices = {};
+  LISTS.forEach(l => {
+    const d = getData(l);
+    prices[l] = d.reduce((s,e) => s + (parseFloat(e.price)||0), 0);
+  });
+  const totalPrice = Object.values(prices).reduce((a,b)=>a+b,0);
+
+  document.getElementById('main-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${grand}</div><div class="stat-label">Total Entries</div></div>
+    <div class="stat-card"><div class="stat-val">${totals.needs}</div><div class="stat-label" style="color:var(--needs-color)">Needs</div></div>
+    <div class="stat-card"><div class="stat-val">${totals.wants}</div><div class="stat-label" style="color:var(--wants-color)">Wants</div></div>
+    <div class="stat-card"><div class="stat-val">${totals.shopping}</div><div class="stat-label" style="color:var(--shopping-color)">Shopping</div></div>
+    <div class="stat-card"><div class="stat-val">${totals.bucket}</div><div class="stat-label" style="color:var(--bucket-color)">Bucket</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:1.3rem;">$${totalPrice.toFixed(0)}</div><div class="stat-label">Total Value</div></div>
+  `;
+
+  // bar chart
+  const maxVal = Math.max(...Object.values(totals), 1);
+  document.getElementById('main-chart').innerHTML = LISTS.map(l => {
+    const pct = (totals[l]/maxVal*100).toFixed(1);
+    const m = LIST_META[l];
+    return `<div class="bar-row">
+      <div class="bar-label">${m.emoji} ${m.label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${m.color};"></div></div>
+      <div class="bar-val">${totals[l]}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  LIST DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderListDashboard() {
+  const m = LIST_META[currentList];
+  const data = getData(currentList);
+  document.getElementById('list-topbar-title').innerHTML = `${m.emoji} ${m.label}`;
+
+  // stats
+  const total = data.length;
+  const checked = data.filter(e=>e.checked).length;
+  const totalPrice = data.reduce((s,e)=>s+(parseFloat(e.price)||0),0);
+  const recent = data.filter(e=>{
+    if(!e.date) return false;
+    const d = new Date(e.date); const now = new Date();
+    return (now-d)/(1000*60*60*24) <= 30;
+  }).length;
+
+  let statsHTML = `
+    <div class="stat-card"><div class="stat-val" style="color:${m.color}">${total}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card"><div class="stat-val">${checked}</div><div class="stat-label">Checked Off</div></div>
+    <div class="stat-card"><div class="stat-val">${total-checked}</div><div class="stat-label">Remaining</div></div>
+    <div class="stat-card"><div class="stat-val">${recent}</div><div class="stat-label">Added (30d)</div></div>
+  `;
+  if (currentList !== 'bucket') {
+    statsHTML += `<div class="stat-card"><div class="stat-val" style="font-size:1.2rem;">$${totalPrice.toFixed(2)}</div><div class="stat-label">Total Value</div></div>`;
+  } else {
+    const avgPct = data.length ? (data.reduce((s,e)=>s+(parseFloat(e.likelihood)||0),0)/data.length).toFixed(0) : 0;
+    statsHTML += `<div class="stat-card"><div class="stat-val">${avgPct}%</div><div class="stat-label">Avg Likelihood</div></div>`;
+  }
+  document.getElementById('list-stats').innerHTML = statsHTML;
+
+  // charts
+  renderListCharts(data);
+}
+
+function renderListCharts(data) {
+  const m = LIST_META[currentList];
+  let html = '';
+
+  if (currentList === 'bucket') {
+    // likelihood distribution
+    const bands = [
+      {label:'0–25%',min:0,max:25,count:0},
+      {label:'26–50%',min:26,max:50,count:0},
+      {label:'51–75%',min:51,max:75,count:0},
+      {label:'76–100%',min:76,max:100,count:0},
+    ];
+    data.forEach(e => {
+      const v = parseFloat(e.likelihood)||0;
+      bands.forEach(b=>{ if(v>=b.min&&v<=b.max) b.count++; });
+    });
+    const max = Math.max(...bands.map(b=>b.count),1);
+    html = `<div class="chart-container"><div class="chart-title">📊 Likelihood Distribution</div><div class="bar-chart">
+      ${bands.map(b=>`<div class="bar-row">
+        <div class="bar-label">${b.label}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${b.count/max*100}%;background:var(--bucket-color);"></div></div>
+        <div class="bar-val">${b.count}</div>
+      </div>`).join('')}
+    </div></div>`;
+  } else if (currentList === 'shopping') {
+    // top stores
+    const stores = {};
+    data.forEach(e => { if(e.store) stores[e.store] = (stores[e.store]||0)+1; });
+    const sorted = Object.entries(stores).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const max = sorted.length ? sorted[0][1] : 1;
+    html = `<div class="chart-container"><div class="chart-title">🏪 Top Stores</div><div class="bar-chart">
+      ${sorted.length ? sorted.map(([s,c])=>`<div class="bar-row">
+        <div class="bar-label">${s}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${c/max*100}%;background:var(--shopping-color);"></div></div>
+        <div class="bar-val">${c}</div>
+      </div>`).join('') : '<div style="color:var(--text-muted);font-size:0.85rem;">No store data yet</div>'}
+    </div></div>`;
+  } else {
+    // price ranges
+    const ranges = [
+      {label:'Under $25',max:25,count:0},
+      {label:'$25–$100',max:100,count:0},
+      {label:'$100–$500',max:500,count:0},
+      {label:'Over $500',max:Infinity,count:0},
+    ];
+    data.forEach(e => {
+      const v = parseFloat(e.price)||0;
+      if(v<25) ranges[0].count++;
+      else if(v<100) ranges[1].count++;
+      else if(v<500) ranges[2].count++;
+      else ranges[3].count++;
+    });
+    const max = Math.max(...ranges.map(r=>r.count),1);
+    html = `<div class="chart-container"><div class="chart-title">💰 Price Ranges</div><div class="bar-chart">
+      ${ranges.map(r=>`<div class="bar-row">
+        <div class="bar-label">${r.label}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${r.count/max*100}%;background:${m.color};"></div></div>
+        <div class="bar-val">${r.count}</div>
+      </div>`).join('')}
+    </div></div>`;
+  }
+
+  // checked vs unchecked donut
+  const checked = data.filter(e=>e.checked).length;
+  const unchecked = data.length - checked;
+  html += buildDonutChart(checked, unchecked, m.hex);
+
+  document.getElementById('list-charts').innerHTML = html;
+}
+
+function buildDonutChart(checked, unchecked, color) {
+  const total = checked + unchecked || 1;
+  const r = 54; const cx = 70; const cy = 70;
+  const circum = 2 * Math.PI * r;
+  const checkedArc = (checked/total) * circum;
+  const uncheckedArc = circum - checkedArc;
+  const rotation = -Math.PI/2;
+  const cosCk = Math.cos(rotation); const sinCk = Math.sin(rotation);
+  return `<div class="chart-container"><div class="chart-title">✅ Completion Status</div>
+    <div class="donut-row">
+      <svg width="140" height="140" viewBox="0 0 140 140" class="donut-svg">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg-primary)" stroke-width="20"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="20"
+          stroke-dasharray="${checkedArc} ${uncheckedArc}" stroke-dashoffset="${-circum * 0}"
+          transform="rotate(-90 ${cx} ${cy})" stroke-linecap="round"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="20"
+          stroke-dasharray="${uncheckedArc} ${checkedArc}" stroke-dashoffset="${-checkedArc}"
+          transform="rotate(-90 ${cx} ${cy})"/>
+        <text x="${cx}" y="${cy-6}" text-anchor="middle" fill="var(--text-primary)" font-size="22" font-family="Rajdhani" font-weight="700">${checked}</text>
+        <text x="${cx}" y="${cy+14}" text-anchor="middle" fill="var(--text-secondary)" font-size="11" font-family="Nunito">done</text>
+      </svg>
+      <div class="donut-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:${color}"></div><span>Checked: <b>${checked}</b></span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.1)"></div><span>Remaining: <b>${unchecked}</b></span></div>
+        <div class="legend-item" style="margin-top:4px;color:var(--text-secondary);font-size:0.8rem;">${total} total entries</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  HISTORY / ENTRIES
+// ═══════════════════════════════════════════════════════
+function toggleHistoryView() {
+  historyVisible = !historyVisible;
+  document.getElementById('list-history').style.display = historyVisible ? 'block' : 'none';
+  if (historyVisible) renderHistory();
+}
+
+function renderHistory() {
+  const data = getData(currentList);
+  const search = document.getElementById('history-search').value.toLowerCase();
+  const filtered = data.filter(e => {
+    const str = JSON.stringify(e).toLowerCase();
+    return !search || str.includes(search);
+  });
+
+  if (!filtered.length) {
+    document.getElementById('entries-container').innerHTML = `<div class="empty-state"><div class="empty-icon">${LIST_META[currentList].emoji}</div><p>No entries found.</p></div>`;
+    return;
+  }
+
+  document.getElementById('entries-container').innerHTML = filtered.map(e => entryHTML(e)).join('');
+}
+
+function entryHTML(e) {
+  const m = LIST_META[currentList];
+  let metas = '';
+  if (e.price) metas += `<span class="entry-tag entry-price">$${parseFloat(e.price).toFixed(2)}</span>`;
+  if (e.store) metas += `<span class="entry-tag">🏪 ${e.store}</span>`;
+  if (e.likelihood != null && e.likelihood !== '') metas += `<span class="entry-tag" style="color:var(--bucket-color)">${e.likelihood}% likely</span>`;
+  if (e.date) metas += `<span class="entry-tag">📅 ${e.date}</span>`;
+  if (e.link) metas += `<a href="${e.link}" target="_blank" class="entry-tag" style="color:var(--accent-light);text-decoration:none;">🔗 Link</a>`;
+
+  return `<div class="entry-item ${e.checked?'checked':''}" id="entry-${e.id}">
+    <input type="checkbox" class="entry-checkbox" ${e.checked?'checked':''} onclick="toggleCheck(event,'${e.id}')">
+    <div class="entry-content" onclick="openEditEntry('${e.id}')">
+      <div class="entry-title">${escHtml(e.item||'Unnamed')}</div>
+      <div class="entry-meta">${metas}</div>
+      ${e.comments ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">${escHtml(e.comments).substring(0,80)}${e.comments.length>80?'…':''}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function toggleCheck(ev, id) {
+  ev.stopPropagation();
+  const data = getData(currentList);
+  const idx = data.findIndex(e=>e.id===id);
+  if (idx>=0) { data[idx].checked = !data[idx].checked; saveData(currentList, data); renderHistory(); renderListDashboard(); }
+}
+
+// ═══════════════════════════════════════════════════════
+//  ADD / EDIT ENTRY MODAL
+// ═══════════════════════════════════════════════════════
+function openAddEntry() {
+  editingId = null;
+  document.getElementById('entry-modal-title').textContent = `${LIST_META[currentList].emoji} Add Entry — ${LIST_META[currentList].label}`;
+  document.getElementById('entry-form-body').innerHTML = buildEntryForm(currentList, null);
+  document.getElementById('entry-modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal('modal-entry')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEntry()">＋ Add Entry</button>
+  `;
+  openModal('modal-entry');
+}
+
+function openEditEntry(id) {
+  const data = getData(currentList);
+  const entry = data.find(e=>e.id===id);
+  if (!entry) return;
+  editingId = id;
+  document.getElementById('entry-modal-title').textContent = `✏️ Edit Entry`;
+  document.getElementById('entry-form-body').innerHTML = buildEntryForm(currentList, entry);
+  document.getElementById('entry-modal-footer').innerHTML = `
+    <button class="btn btn-danger" onclick="deleteEntry('${id}')">🗑️ Delete</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-entry')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEntry()">💾 Save</button>
+  `;
+  openModal('modal-entry');
+}
+
+function buildEntryForm(list, entry) {
+  const v = entry || {};
+  const today = new Date().toISOString().split('T')[0];
+  let html = `
+    <div class="form-group">
+      <label class="form-label">Item *</label>
+      <input type="text" class="form-input" id="ef-item" value="${escHtml(v.item||'')}" placeholder="Enter item name…">
+    </div>`;
+
+  if (list === 'needs' || list === 'wants') {
+    html += `
+    <div class="form-group">
+      <label class="form-label">Price ($)</label>
+      <input type="number" step="0.01" min="0" class="form-input" id="ef-price" value="${v.price||''}" placeholder="0.00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Link to Item (URL)</label>
+      <input type="url" class="form-input" id="ef-link" value="${escHtml(v.link||'')}" placeholder="https://…">
+    </div>`;
+  }
+
+  if (list === 'shopping') {
+    html += `
+    <div class="form-group">
+      <label class="form-label">Price ($)</label>
+      <input type="number" step="0.01" min="0" class="form-input" id="ef-price" value="${v.price||''}" placeholder="0.00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Store</label>
+      <input type="text" class="form-input" id="ef-store" value="${escHtml(v.store||'')}" placeholder="Store name…">
+    </div>`;
+  }
+
+  if (list === 'bucket') {
+    html += `
+    <div class="form-group">
+      <label class="form-label">% Likely to Complete</label>
+      <input type="number" min="0" max="100" class="form-input" id="ef-likelihood" value="${v.likelihood!=null?v.likelihood:''}" placeholder="0–100">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Details</label>
+      <textarea class="form-textarea" id="ef-details" placeholder="More details…">${escHtml(v.details||'')}</textarea>
+    </div>`;
+  }
+
+  html += `
+    <div class="form-group">
+      <label class="form-label">Comments</label>
+      <textarea class="form-textarea" id="ef-comments" placeholder="Any notes…">${escHtml(v.comments||'')}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date Added</label>
+      <input type="date" class="form-input" id="ef-date" value="${v.date||today}">
+    </div>`;
+  return html;
+}
+
+function saveEntry() {
+  const item = document.getElementById('ef-item')?.value.trim();
+  if (!item) { showToast('Item name is required.','error'); return; }
+
+  const entry = { item };
+  const pEl = document.getElementById('ef-price');
+  const lEl = document.getElementById('ef-link');
+  const sEl = document.getElementById('ef-store');
+  const liEl = document.getElementById('ef-likelihood');
+  const detEl = document.getElementById('ef-details');
+  const cEl = document.getElementById('ef-comments');
+  const dEl = document.getElementById('ef-date');
+
+  if (pEl) entry.price = pEl.value;
+  if (lEl) entry.link = lEl.value;
+  if (sEl) entry.store = sEl.value;
+  if (liEl) entry.likelihood = liEl.value;
+  if (detEl) entry.details = detEl.value;
+  if (cEl) entry.comments = cEl.value;
+  if (dEl) entry.date = dEl.value;
+
+  const data = getData(currentList);
+  if (editingId) {
+    const idx = data.findIndex(e=>e.id===editingId);
+    if (idx>=0) { entry.id = editingId; entry.checked = data[idx].checked; data[idx] = entry; }
+    showToast('Entry updated ✓','success');
+  } else {
+    entry.id = genId(); entry.checked = false;
+    data.unshift(entry);
+    showToast('Entry added ✓','success');
+  }
+  saveData(currentList, data);
+  closeModal('modal-entry');
+  renderListDashboard();
+  if (historyVisible) renderHistory();
+}
+
+function deleteEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  const data = getData(currentList).filter(e=>e.id!==id);
+  saveData(currentList, data);
+  closeModal('modal-entry');
+  showToast('Entry deleted','success');
+  renderListDashboard();
+  if (historyVisible) renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════
+//  GEMINI CHAT
+// ═══════════════════════════════════════════════════════
+function saveGeminiKey() {
+  const key = document.getElementById('gemini-api-key').value.trim();
+  if (key) { localStorage.setItem('gemini_api_key', key); showToast('API key saved ✓','success'); }
+}
+
+function loadGeminiKey() {
+  const k = localStorage.getItem('gemini_api_key');
+  if (k) document.getElementById('gemini-api-key').value = k;
+}
+
+function buildListContext() {
+  let ctx = 'Here is the user\'s current list data:\n\n';
+  LISTS.forEach(l => {
+    const data = getData(l);
+    ctx += `== ${LIST_META[l].label} LIST (${data.length} items) ==\n`;
+    data.slice(0,20).forEach(e => {
+      ctx += `- ${e.item}`;
+      if (e.price) ctx += ` | $${e.price}`;
+      if (e.store) ctx += ` | Store: ${e.store}`;
+      if (e.likelihood) ctx += ` | ${e.likelihood}% likely`;
+      if (e.date) ctx += ` | ${e.date}`;
+      ctx += '\n';
+    });
+    ctx += '\n';
+  });
+  return ctx;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  const key = localStorage.getItem('gemini_api_key');
+  if (!key) { showToast('Please enter your Gemini API key first.','error'); return; }
+
+  appendChatMsg(msg, 'user');
+  const thinking = appendChatMsg('Thinking…','assistant thinking');
+
+  const includeContext = msg.toLowerCase().includes('/lists');
+  const prompt = includeContext ? buildListContext()+'\n\nUser question: '+msg.replace('/lists','').trim() : msg;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
+    thinking.className = 'chat-msg assistant';
+    thinking.textContent = text;
+  } catch(err) {
+    thinking.className = 'chat-msg assistant';
+    thinking.textContent = 'Error: ' + err.message;
+  }
+
+  const msgs = document.getElementById('chat-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendChatMsg(text, cls) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg ' + cls;
+  el.textContent = text;
+  document.getElementById('chat-messages').appendChild(el);
+  const msgs = document.getElementById('chat-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+  return el;
+}
+
+// ═══════════════════════════════════════════════════════
+//  DB MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function renderExportCheckboxes() {
+  document.getElementById('export-checkboxes').innerHTML = LISTS.map(l => {
+    const m = LIST_META[l];
+    const count = getData(l).length;
+    return `<label class="db-checkbox-item">
+      <input type="checkbox" id="export-cb-${l}" checked>
+      <span>${m.emoji} ${m.label} <small style="color:var(--text-muted)">(${count})</small></span>
+    </label>`;
+  }).join('');
+}
+
+function selectAllExport(val) {
+  LISTS.forEach(l => { const el = document.getElementById('export-cb-'+l); if(el) el.checked = val; });
+}
+
+function exportSelected() {
+  let exported = 0;
+  LISTS.forEach(l => {
+    const cb = document.getElementById('export-cb-'+l);
+    if (!cb || !cb.checked) return;
+    const data = getData(l);
+    if (!data.length) return;
+    const keys = Object.keys(data[0]).filter(k=>k!=='id'&&k!=='checked');
+    const rows = [['id','checked',...keys].join(',')];
+    data.forEach(e => {
+      const vals = ['id','checked',...keys].map(k => JSON.stringify(e[k]||''));
+      rows.push(vals.join(','));
+    });
+    downloadFile(`${l}_list_${new Date().toISOString().split('T')[0]}.csv`, rows.join('\n'));
+    exported++;
+  });
+  if (!exported) { showToast('No lists selected or empty.','error'); return; }
+  showToast(`Exported ${exported} list(s) ✓`,'success');
+}
+
+function downloadFile(filename, content) {
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(content);
+  a.download = filename; a.click();
+}
+
+function importCSV() {
+  const listKey = document.getElementById('import-list-select').value;
+  const file = document.getElementById('import-file-input').files[0];
+  if (!file) { showToast('Choose a CSV file first.','error'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split('\n').filter(l=>l.trim());
+    if (lines.length < 2) { showToast('CSV appears empty.','error'); return; }
+    const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+    const existing = getData(listKey);
+    let added = 0;
+    lines.slice(1).forEach(line => {
+      const vals = parseCSVLine(line);
+      const obj = {};
+      headers.forEach((h,i) => { obj[h] = (vals[i]||'').replace(/^"|"$/g,'').trim(); });
+      if (!obj.item) return;
+      // skip duplicates by item name
+      if (!existing.some(e=>e.item===obj.item)) {
+        obj.id = obj.id || genId();
+        obj.checked = obj.checked === 'true';
+        existing.push(obj);
+        added++;
+      }
+    });
+    saveData(listKey, existing);
+    showToast(`Imported ${added} entries into ${listKey} ✓`,'success');
+    renderMain();
+    if (currentList === listKey) renderListDashboard();
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i=0;i<line.length;i++) {
+    if (line[i]==='"') { inQ=!inQ; }
+    else if (line[i]===',' && !inQ) { result.push(cur); cur=''; }
+    else cur+=line[i];
+  }
+  result.push(cur); return result;
+}
+
+function clearAllData() {
+  if (!confirm('This will permanently delete ALL list data. Are you sure?')) return;
+  LISTS.forEach(l => saveData(l, []));
+  renderMain();
+  showToast('All data cleared','success');
+  closeModal('modal-db');
+}
+
+// ═══════════════════════════════════════════════════════
+//  MODAL HELPERS
+// ═══════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'modal-db') renderExportCheckboxes();
+  if (id === 'modal-chat') loadGeminiKey();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
+});
+
+// ═══════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, 2800);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+renderMain();
+</script>
+</body>
+</html>
