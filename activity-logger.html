@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Activity Logger</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0a0c10;
+  --bg-secondary: #111318;
+  --bg-card: #161a22;
+  --bg-elevated: #1d2230;
+  --accent-blue: #3d8ef0;
+  --accent-teal: #00c9a7;
+  --accent-purple: #9b6dff;
+  --accent-orange: #ff7043;
+  --accent-red: #f44336;
+  --accent-green: #4caf50;
+  --accent-yellow: #ffc107;
+  --accent-pink: #e91e8c;
+  --text-primary: #e8eaf0;
+  --text-secondary: #8892a4;
+  --text-muted: #4a5568;
+  --border: #252d3d;
+  --border-light: #2d3748;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Exo 2',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg-secondary);}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px;}
+
+/* SCREENS */
+.screen{display:none;min-height:100vh;}
+.screen.active{display:block;}
+
+/* TOP BAR */
+.topbar{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-title{font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:700;color:var(--accent-blue);}
+.topbar-actions{display:flex;gap:10px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:24px;border:none;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:600;font-size:0.85rem;transition:all 0.2s;text-decoration:none;white-space:nowrap;}
+.btn-primary{background:linear-gradient(135deg,var(--accent-blue),#2563eb);color:#fff;box-shadow:0 2px 12px rgba(61,142,240,0.35);}
+.btn-primary:hover{box-shadow:0 4px 20px rgba(61,142,240,0.55);transform:translateY(-1px);}
+.btn-teal{background:linear-gradient(135deg,var(--accent-teal),#009688);color:#fff;box-shadow:0 2px 12px rgba(0,201,167,0.3);}
+.btn-teal:hover{box-shadow:0 4px 20px rgba(0,201,167,0.5);transform:translateY(-1px);}
+.btn-purple{background:linear-gradient(135deg,var(--accent-purple),#7c3aed);color:#fff;box-shadow:0 2px 12px rgba(155,109,255,0.3);}
+.btn-purple:hover{box-shadow:0 4px 20px rgba(155,109,255,0.5);transform:translateY(-1px);}
+.btn-orange{background:linear-gradient(135deg,var(--accent-orange),#e64a19);color:#fff;box-shadow:0 2px 12px rgba(255,112,67,0.3);}
+.btn-orange:hover{box-shadow:0 4px 20px rgba(255,112,67,0.5);transform:translateY(-1px);}
+.btn-red{background:linear-gradient(135deg,var(--accent-red),#c62828);color:#fff;box-shadow:0 2px 12px rgba(244,67,54,0.3);}
+.btn-red:hover{box-shadow:0 4px 20px rgba(244,67,54,0.5);transform:translateY(-1px);}
+.btn-green{background:linear-gradient(135deg,var(--accent-green),#388e3c);color:#fff;box-shadow:0 2px 12px rgba(76,175,80,0.3);}
+.btn-green:hover{box-shadow:0 4px 20px rgba(76,175,80,0.5);transform:translateY(-1px);}
+.btn-yellow{background:linear-gradient(135deg,var(--accent-yellow),#f57c00);color:#111;box-shadow:0 2px 12px rgba(255,193,7,0.3);}
+.btn-yellow:hover{box-shadow:0 4px 20px rgba(255,193,7,0.5);transform:translateY(-1px);}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--bg-elevated);color:var(--text-primary);}
+.btn-sm{padding:6px 14px;font-size:0.78rem;border-radius:20px;}
+.btn-icon{padding:8px 12px;}
+
+/* MAIN DASHBOARD GRID */
+.dash-container{padding:20px;max-width:1200px;margin:0 auto;}
+.dash-header{margin-bottom:24px;text-align:center;}
+.dash-header h1{font-size:2.2rem;background:linear-gradient(135deg,var(--accent-blue),var(--accent-teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.dash-header p{color:var(--text-secondary);font-size:0.9rem;margin-top:4px;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;}
+.stat-card .stat-val{font-family:'Rajdhani',sans-serif;font-size:2rem;font-weight:700;color:var(--accent-blue);}
+.stat-card .stat-lbl{font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;}
+
+/* LOG BUTTON GRID */
+.log-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;margin-bottom:24px;}
+.log-btn{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 14px;text-align:center;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;overflow:hidden;}
+.log-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,0.02));pointer-events:none;}
+.log-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--accent-blue);}
+.log-btn .log-icon{font-size:2.2rem;line-height:1;}
+.log-btn .log-label{font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:600;color:var(--text-primary);}
+.log-btn .log-count{font-size:0.72rem;color:var(--text-muted);background:var(--bg-elevated);padding:2px 8px;border-radius:10px;}
+
+/* SUB-DASHBOARD */
+.sub-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+.sub-header-icon{font-size:2rem;}
+.sub-header h2{font-size:1.8rem;font-weight:700;}
+.sub-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.sub-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
+.sub-stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;}
+.sub-stat .sv{font-family:'Rajdhani',sans-serif;font-size:1.7rem;font-weight:700;}
+.sub-stat .sl{font-size:0.72rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;}
+
+/* CHART AREA */
+.chart-area{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px;height:200px;display:flex;align-items:flex-end;gap:4px;overflow:hidden;}
+.chart-bar{flex:1;background:linear-gradient(180deg,var(--accent-blue),#1a4fa3);border-radius:4px 4px 0 0;min-height:4px;transition:height 0.5s ease;position:relative;}
+.chart-bar:hover::after{content:attr(data-val);position:absolute;top:-22px;left:50%;transform:translateX(-50%);background:var(--bg-elevated);color:var(--text-primary);font-size:0.7rem;padding:2px 6px;border-radius:4px;white-space:nowrap;}
+
+/* TABLE */
+.table-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:auto;}
+.data-table{width:100%;border-collapse:collapse;font-size:0.83rem;}
+.data-table th{background:var(--bg-elevated);color:var(--text-secondary);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.5px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-family:'Rajdhani',sans-serif;font-weight:600;}
+.data-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-primary);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--bg-elevated);}
+.data-table .act-btns{display:flex;gap:6px;}
+.empty-state{text-align:center;padding:40px;color:var(--text-muted);font-size:0.9rem;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
+.modal-wide{max-width:860px;}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg-secondary);z-index:1;}
+.modal-header h3{font-size:1.2rem;font-weight:700;}
+.modal-close{background:none;border:none;color:var(--text-secondary);font-size:1.4rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:color 0.2s;}
+.modal-close:hover{color:var(--text-primary);}
+.modal-body{padding:20px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+
+/* FORM */
+.form-group{margin-bottom:14px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+label{display:block;font-size:0.78rem;color:var(--text-secondary);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.4px;font-weight:600;}
+input,select,textarea{width:100%;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:9px 12px;font-family:'Exo 2',sans-serif;font-size:0.88rem;transition:border-color 0.2s;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent-blue);}
+textarea{resize:vertical;min-height:70px;}
+select option{background:var(--bg-elevated);}
+input[type=checkbox]{width:auto;accent-color:var(--accent-blue);}
+.check-row{display:flex;align-items:center;gap:8px;}
+.check-row input{width:18px;height:18px;}
+
+/* STAR RATING */
+.star-rating{display:flex;gap:4px;flex-direction:row-reverse;justify-content:flex-end;}
+.star-rating input{display:none;}
+.star-rating label{font-size:1.4rem;cursor:pointer;color:var(--text-muted);transition:color 0.15s;}
+.star-rating input:checked ~ label,.star-rating label:hover,.star-rating label:hover ~ label{color:var(--accent-yellow);}
+
+/* GEMINI CHAT */
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 60px);}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;}
+.chat-msg{max-width:75%;padding:12px 16px;border-radius:var(--radius);font-size:0.88rem;line-height:1.5;}
+.chat-msg.user{background:linear-gradient(135deg,var(--accent-blue),#2563eb);color:#fff;align-self:flex-end;border-radius:var(--radius) var(--radius) 4px var(--radius);}
+.chat-msg.ai{background:var(--bg-card);border:1px solid var(--border);align-self:flex-start;border-radius:var(--radius) var(--radius) var(--radius) 4px;}
+.chat-input-area{padding:16px;border-top:1px solid var(--border);display:flex;gap:10px;}
+.chat-input-area input{flex:1;}
+.chat-thinking{opacity:0.6;font-style:italic;}
+
+/* DB MANAGER */
+.db-section{margin-bottom:20px;}
+.db-section h4{font-size:1rem;margin-bottom:10px;color:var(--accent-teal);}
+.db-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+.db-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;flex-direction:column;gap:8px;}
+.db-item-name{font-size:0.85rem;font-weight:600;}
+.db-item-count{font-size:0.72rem;color:var(--text-muted);}
+.db-item-btns{display:flex;gap:6px;}
+
+/* NOTIFICATION */
+.notif{position:fixed;bottom:20px;right:20px;background:var(--bg-elevated);border:1px solid var(--accent-teal);color:var(--text-primary);padding:12px 20px;border-radius:var(--radius);font-size:0.88rem;z-index:9999;transform:translateY(100px);opacity:0;transition:all 0.3s;box-shadow:var(--shadow);}
+.notif.show{transform:translateY(0);opacity:1;}
+.notif.error{border-color:var(--accent-red);}
+
+/* STATUS BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}
+.badge-normal{background:rgba(76,175,80,0.2);color:#4caf50;}
+.badge-elevated{background:rgba(255,193,7,0.2);color:#ffc107;}
+.badge-high{background:rgba(255,112,67,0.2);color:#ff7043;}
+.badge-crisis{background:rgba(244,67,54,0.2);color:#f44336;}
+.badge-low{background:rgba(61,142,240,0.2);color:#3d8ef0;}
+
+@media(max-width:600px){
+  .form-row{grid-template-columns:1fr;}
+  .log-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .dash-container{padding:12px;}
+  .modal{max-height:98vh;}
+}
+</style>
+</head>
+<body>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<!-- ===== MAIN DASHBOARD ===== -->
+<div class="screen active" id="screen-main">
+  <div class="topbar">
+    <div class="topbar-title">📊 Activity Logger</div>
+    <div class="topbar-actions">
+      <button class="btn btn-teal btn-sm" onclick="openChat()">🤖 Chat AI</button>
+      <button class="btn btn-ghost btn-sm" onclick="openDbManager()">🗄️ Database</button>
+    </div>
+  </div>
+  <div class="dash-container">
+    <div class="dash-header">
+      <h1>Activity Dashboard</h1>
+      <p>Track your health, habits, and household in one place</p>
+    </div>
+    <div class="stats-row" id="main-stats"></div>
+    <div class="log-grid" id="log-grid"></div>
+  </div>
+</div>
+
+<!-- ===== SUB-DASHBOARD (shared) ===== -->
+<div class="screen" id="screen-sub">
+  <div class="topbar">
+    <div class="topbar-title" id="sub-topbar-title">Log Dashboard</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="goMain()">🏠 Main Dashboard</button>
+    </div>
+  </div>
+  <div class="dash-container">
+    <div class="sub-header">
+      <div class="sub-header-icon" id="sub-icon"></div>
+      <div>
+        <h2 id="sub-title"></h2>
+        <div style="color:var(--text-secondary);font-size:0.85rem;" id="sub-desc"></div>
+      </div>
+    </div>
+    <div class="sub-actions">
+      <button class="btn btn-primary" onclick="currentLog.openAddEntry()">➕ Add Entry</button>
+      <button class="btn btn-ghost" onclick="currentLog.openHistory()">📋 View History</button>
+    </div>
+    <div class="sub-stats" id="sub-stats"></div>
+    <div class="chart-area" id="sub-chart"></div>
+  </div>
+</div>
+
+<!-- ===== CHAT SCREEN ===== -->
+<div class="screen" id="screen-chat">
+  <div class="topbar">
+    <div class="topbar-title">🤖 AI Assistant</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="goMain()">← Back</button>
+    </div>
+  </div>
+  <div class="chat-container">
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-msg ai">Hi! I'm your Activity Logger AI. Ask me about your logged data, trends, or health insights. I can access all your logs!</div>
+    </div>
+    <div class="chat-input-area">
+      <input type="text" id="chat-input" placeholder="Ask about your logs..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="btn btn-primary" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+<!-- Add/Edit Entry Modal -->
+<div class="modal-overlay" id="modal-entry">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-entry-title">Add Entry</h3>
+      <button class="modal-close" onclick="closeModal('modal-entry')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-entry-body"></div>
+    <div class="modal-footer" id="modal-entry-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-entry')">Cancel</button>
+      <button class="btn btn-primary" id="modal-entry-save" onclick="currentLog.saveEntry()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div class="modal-overlay" id="modal-history">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3 id="modal-history-title">History</h3>
+      <button class="modal-close" onclick="closeModal('modal-history')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-history-body"></div>
+  </div>
+</div>
+
+<!-- DB Manager Modal -->
+<div class="modal-overlay" id="modal-db">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>🗄️ Database Management</h3>
+      <button class="modal-close" onclick="closeModal('modal-db')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-db-body"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA LAYER
+// ============================================================
+const DB = {
+  get(key){ try{return JSON.parse(localStorage.getItem('al_'+key)||'[]');}catch{return [];} },
+  set(key,val){ localStorage.setItem('al_'+key,JSON.stringify(val)); },
+  add(key,entry){ const d=DB.get(key); entry.id='id'+Date.now()+Math.random().toString(36).slice(2).replace(/[^a-z0-9]/g,''); d.push(entry); DB.set(key,d); return entry; },
+  update(key,id,entry){ const d=DB.get(key); const i=d.findIndex(x=>x.id===id); if(i>=0){d[i]={...entry,id}; DB.set(key,d);} },
+  delete(key,id){ DB.set(key,DB.get(key).filter(x=>x.id!==id)); },
+  count(key){ return DB.get(key).length; }
+};
+
+// ============================================================
+// UTILS
+// ============================================================
+function notify(msg,err=false){
+  const n=document.getElementById('notif');
+  n.textContent=msg; n.className='notif'+(err?' error':'');
+  n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),3000);
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function goMain(){showScreen('screen-main');renderMainDash();}
+function openChat(){showScreen('screen-chat');}
+
+function today(){return new Date().toISOString().split('T')[0];}
+function nowTime(){return new Date().toTimeString().slice(0,5);}
+function fmtDate(d){if(!d)return '';try{return new Date(d+'T12:00:00').toLocaleDateString();}catch{return d;}}
+function calcDuration(start,end){
+  if(!start||!end)return '';
+  const [sh,sm]=start.split(':').map(Number);
+  const [eh,em]=end.split(':').map(Number);
+  let mins=(eh*60+em)-(sh*60+sm);
+  if(mins<0)mins+=1440;
+  return `${Math.floor(mins/60)}h ${mins%60}m`;
+}
+
+// CSV helpers
+function toCSV(data){
+  if(!data.length)return '';
+  const keys=Object.keys(data[0]).filter(k=>k!=='id');
+  const rows=[keys.join(','),...data.map(r=>keys.map(k=>`"${(r[k]??'').toString().replace(/"/g,'""')}"`).join(','))];
+  return rows.join('\n');
+}
+function fromCSV(text){
+  const lines=text.trim().split('\n');
+  if(lines.length<2)return[];
+  const keys=lines[0].split(',').map(k=>k.trim().replace(/^"|"$/g,''));
+  return lines.slice(1).map(line=>{
+    const vals=[];let cur='',inQ=false;
+    for(let c of line){if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){vals.push(cur);cur='';}else cur+=c;}
+    vals.push(cur);
+    const obj={};keys.forEach((k,i)=>obj[k]=(vals[i]||'').replace(/^"|"$/g,''));
+    return obj;
+  });
+}
+function downloadCSV(data,name){
+  const blob=new Blob([toCSV(data)],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'.csv';a.click();
+}
+
+// Star rating HTML
+function starRatingHTML(name,val=0){
+  return `<div class="star-rating">
+    ${[5,4,3,2,1].map(n=>`<input type="radio" name="${name}" id="${name}_${n}" value="${n}" ${n==val?'checked':''}><label for="${name}_${n}">★</label>`).join('')}
+  </div>`;
+}
+function getStarVal(name){
+  const el=document.querySelector(`input[name="${name}"]:checked`);
+  return el?el.value:'0';
+}
+
+// ============================================================
+// LOG DEFINITIONS
+// ============================================================
+const LOGS=[
+  {key:'bathroom',icon:'🚽',label:'Bathroom',color:'#3d8ef0',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Usage Type</label><select id="f_usage_type"><option>Bowel Movement</option><option>Urinated</option></select></div>
+    <div class="form-group"><label>Urgency Level</label><select id="f_urgency"><option>None</option><option>Mild</option><option>Moderate</option><option>Major</option><option>Severe</option><option>Urgent</option></select></div>
+    <div class="form-group"><label>Discomfort Level</label><select id="f_discomfort"><option>None</option><option>Mild</option><option>Moderate</option><option>Major</option><option>Severe</option><option>Extreme</option></select></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),usage_type:V('f_usage_type'),urgency:V('f_urgency'),discomfort:V('f_discomfort'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_usage_type',e.usage_type);S('f_urgency',e.urgency);S('f_discomfort',e.discomfort);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','usage_type','urgency','discomfort','comments'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#3d8ef0'},{lbl:'Bowel',val:d.filter(x=>x.usage_type==='Bowel Movement').length,c:'#ff7043'},{lbl:'Urinated',val:d.filter(x=>x.usage_type==='Urinated').length,c:'#4caf50'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#9b6dff'}]
+  },
+  {key:'beverage',icon:'🥤',label:'Beverage',color:'#00c9a7',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Beverage Type</label><select id="f_bev_type"><option>Water</option><option>Coffee</option><option>Tea</option><option>Soda</option><option>Energy Drink</option><option>Frozen Beverage</option><option>Alcoholic Beverage</option><option>Juice</option><option>Dairy</option></select></div>
+    <div class="form-group"><label>Beverage Brand</label><select id="f_brand" onchange="toggleOther(this,'f_brand_other')"><option>Tap Water</option><option>Mountain Dew</option><option>Folgers</option><option>Maxwell House</option><option>Great Value</option><option>Signature</option><option>Hood</option><option>Pepsi</option><option>Coca-Cola</option><option>Monster</option><option>Red Bull</option><option>Bud Light</option><option>Other</option></select><input type="text" id="f_brand_other" placeholder="Specify brand" style="margin-top:6px;display:none"></div>
+    <div class="form-group"><label>Beverage Size</label><select id="f_size" onchange="toggleOther(this,'f_size_other')"><option>2 oz.</option><option>4 oz.</option><option>6 oz.</option><option>8 oz.</option><option>10 oz.</option><option>12 oz.</option><option>14 oz.</option><option>15.5 oz.</option><option>16 oz.</option><option>16.9 oz.</option><option>18 oz.</option><option>20 oz.</option><option>Other</option></select><input type="text" id="f_size_other" placeholder="Specify size" style="margin-top:6px;display:none"></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),bev_type:V('f_bev_type'),brand:V('f_brand')==='Other'?V('f_brand_other'):V('f_brand'),size:V('f_size')==='Other'?V('f_size_other'):V('f_size'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_bev_type',e.bev_type);S('f_brand',e.brand);S('f_size',e.size);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','bev_type','brand','size'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#00c9a7'},{lbl:'Water',val:d.filter(x=>x.bev_type==='Water').length,c:'#3d8ef0'},{lbl:'Coffee',val:d.filter(x=>x.bev_type==='Coffee').length,c:'#ff7043'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#9b6dff'}]
+  },
+  {key:'bp',icon:'❤️',label:'Blood Pressure',color:'#f44336',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Name</label><select id="f_name" onchange="toggleOther(this,'f_name_other')"><option>Chris</option><option>Crystal</option><option>Tammi</option><option>Marrian</option><option>Other</option></select><input type="text" id="f_name_other" placeholder="Specify name" style="margin-top:6px;display:none"></div>
+    <div class="form-row"><div class="form-group"><label>Systolic</label><input type="number" id="f_systolic" placeholder="120" oninput="calcBPStatus()"></div><div class="form-group"><label>Diastolic</label><input type="number" id="f_diastolic" placeholder="80" oninput="calcBPStatus()"></div></div>
+    <div class="form-group"><label>Activity</label><select id="f_activity"><option>Resting</option><option>Normal motion</option><option>Vigorous motion</option></select></div>
+    <div class="form-group"><label>Status</label><input type="text" id="f_status" readonly placeholder="Auto-calculated"></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),name:V('f_name')==='Other'?V('f_name_other'):V('f_name'),systolic:V('f_systolic'),diastolic:V('f_diastolic'),activity:V('f_activity'),status:V('f_status'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_name',e.name);S('f_systolic',e.systolic);S('f_diastolic',e.diastolic);S('f_activity',e.activity);S('f_status',e.status);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','name','systolic','diastolic','status'],
+   stats:(d)=>{
+    const avg=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):0;
+    return [{lbl:'Total',val:d.length,c:'#f44336'},{lbl:'Avg Sys',val:avg(d.map(x=>+x.systolic)),c:'#ff7043'},{lbl:'Avg Dia',val:avg(d.map(x=>+x.diastolic)),c:'#ffc107'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#9b6dff'}];
+   }
+  },
+  {key:'cigarette',icon:'🚬',label:'Cigarette',color:'#795548',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Brand</label><select id="f_brand" onchange="toggleOther(this,'f_brand_other')"><option>Indian Reservation</option><option>Basic</option><option>Montego</option><option>Lucky Strike</option><option>Camel</option><option>Marlboro</option><option>Other</option></select><input type="text" id="f_brand_other" placeholder="Specify brand" style="margin-top:6px;display:none"></div>
+    <div class="form-group"><label>Type</label><select id="f_type"><option>Full Flavor</option><option>Regular</option><option>Light</option><option>Ultra-Light</option><option>Menthol</option><option>Menthol Light</option></select></div>
+    <div class="form-group"><label>Size</label><select id="f_size"><option>Regular</option><option>100s</option><option>Slim</option></select></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),brand:V('f_brand')==='Other'?V('f_brand_other'):V('f_brand'),type:V('f_type'),size:V('f_size'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_brand',e.brand);S('f_type',e.type);S('f_size',e.size);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','brand','type','size'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#795548'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#ff7043'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#ffc107'},{lbl:'Avg/Day',val:avgPerDay(d),c:'#9b6dff'}]
+  },
+  {key:'device',icon:'🔋',label:'Device Charge',color:'#ffc107',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div></div>
+    <div class="form-group"><label>Device</label><select id="f_device" onchange="toggleOther(this,'f_device_other')"><option>Smart Watch</option><option>Smart Ring</option><option>Earbuds</option><option>Buds Case</option><option>Ring Case</option><option>Phone</option><option>Tablet</option><option>Keyboard</option><option>Mouse</option><option>Other</option></select><input type="text" id="f_device_other" placeholder="Specify device" style="margin-top:6px;display:none"></div>
+    <div class="form-row"><div class="form-group"><label>Start Time</label><input type="time" id="f_start_time" oninput="calcDevDuration()"></div><div class="form-group"><label>% at Start</label><input type="number" id="f_pct_start" min="0" max="100"></div></div>
+    <div class="form-row"><div class="form-group"><label>End Time</label><input type="time" id="f_end_time" oninput="calcDevDuration()"></div><div class="form-group"><label>% at End</label><input type="number" id="f_pct_end" min="0" max="100"></div></div>
+    <div class="form-row"><div class="form-group"><label>Fully Charged</label><div class="check-row"><input type="checkbox" id="f_full_charge"><label for="f_full_charge" style="text-transform:none;font-size:0.9rem;">Yes</label></div></div><div class="form-group"><label>Amount Charged (%)</label><input type="number" id="f_amt_charged"></div></div>
+    <div class="form-group"><label>Duration</label><input type="text" id="f_duration" readonly placeholder="Auto-calculated"></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),device:V('f_device')==='Other'?V('f_device_other'):V('f_device'),start_time:V('f_start_time'),pct_start:V('f_pct_start'),end_time:V('f_end_time'),pct_end:V('f_pct_end'),full_charge:document.getElementById('f_full_charge')?.checked?'Yes':'No',amt_charged:V('f_amt_charged'),duration:V('f_duration'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_device',e.device);S('f_start_time',e.start_time);S('f_pct_start',e.pct_start);S('f_end_time',e.end_time);S('f_pct_end',e.pct_end);if(document.getElementById('f_full_charge'))document.getElementById('f_full_charge').checked=e.full_charge==='Yes';S('f_amt_charged',e.amt_charged);S('f_duration',e.duration);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','device','start_time','end_time','duration','pct_start','pct_end'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#ffc107'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#3d8ef0'},{lbl:'Full Charges',val:d.filter(x=>x.full_charge==='Yes').length,c:'#4caf50'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#9b6dff'}]
+  },
+  {key:'exercise',icon:'💪',label:'Exercise',color:'#e91e8c',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Start Time</label><input type="time" id="f_start_time" value="${nowTime()}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Exercise Type</label><select id="f_ex_type"><option>Core</option><option>Arms</option><option>Legs</option><option>Cardio</option><option>Endurance</option><option>Strength</option></select></div><div class="form-group"><label>Exercise Name</label><input type="text" id="f_exercise" placeholder="e.g. Push-ups"></div></div>
+    <div class="form-row"><div class="form-group"><label>No. of Sets</label><input type="number" id="f_sets"></div><div class="form-group"><label>No. of Reps</label><input type="number" id="f_reps"></div></div>
+    <div class="form-group"><label>Details</label><textarea id="f_details"></textarea></div>
+    <div class="form-row"><div class="form-group"><label>End Time</label><input type="time" id="f_end_time"></div><div class="form-group"><label>Workout Rating</label>${starRatingHTML('f_rating')}</div></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),start_time:V('f_start_time'),ex_type:V('f_ex_type'),exercise:V('f_exercise'),sets:V('f_sets'),reps:V('f_reps'),details:V('f_details'),end_time:V('f_end_time'),rating:getStarVal('f_rating'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_start_time',e.start_time);S('f_ex_type',e.ex_type);S('f_exercise',e.exercise);S('f_sets',e.sets);S('f_reps',e.reps);S('f_details',e.details);S('f_end_time',e.end_time);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','ex_type','exercise','sets','reps','rating'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#e91e8c'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#3d8ef0'},{lbl:'Types',val:new Set(d.map(x=>x.ex_type)).size,c:'#ffc107'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#4caf50'}]
+  },
+  {key:'food',icon:'🍽️',label:'Food',color:'#ff7043',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Meal</label><select id="f_meal"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select></div><div class="form-group"><label>Prepared By</label><select id="f_prepared_by"><option>Crystal</option><option>Chris</option><option>Tammi</option><option>Marrian</option><option>Take-out</option><option>Delivery</option><option>Restaurant</option></select></div></div>
+    <div class="form-group"><label>Main Dish</label><input type="text" id="f_main_dish" placeholder="Main dish name"></div>
+    <div class="form-group"><label>Side Dishes</label><textarea id="f_sides" placeholder="Side dishes"></textarea></div>
+    <div class="form-group"><label>Rating</label>${starRatingHTML('f_rating')}</div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),meal:V('f_meal'),prepared_by:V('f_prepared_by'),main_dish:V('f_main_dish'),sides:V('f_sides'),rating:getStarVal('f_rating'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_meal',e.meal);S('f_prepared_by',e.prepared_by);S('f_main_dish',e.main_dish);S('f_sides',e.sides);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','meal','prepared_by','main_dish','rating'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#ff7043'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#3d8ef0'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#4caf50'},{lbl:'Avg Rating',val:avgRating(d),c:'#ffc107'}]
+  },
+  {key:'glucose',icon:'🩸',label:'Glucose',color:'#e91e63',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Name</label><select id="f_name" onchange="toggleOther(this,'f_name_other')"><option>Chris</option><option>Crystal</option><option>Tammi</option><option>Marrian</option><option>Other</option></select><input type="text" id="f_name_other" placeholder="Specify name" style="margin-top:6px;display:none"></div>
+    <div class="form-row"><div class="form-group"><label>Glucose Reading (mg/dL)</label><input type="number" id="f_glucose" placeholder="e.g. 95" oninput="calcGlucoseStatus()"></div><div class="form-group"><label>Context</label><select id="f_context"><option>Fasting</option><option>Before Meal</option><option>After Meal</option></select></div></div>
+    <div class="form-group"><label>Status</label><input type="text" id="f_status" readonly placeholder="Auto-calculated"></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),name:V('f_name')==='Other'?V('f_name_other'):V('f_name'),glucose:V('f_glucose'),context:V('f_context'),status:V('f_status'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_name',e.name);S('f_glucose',e.glucose);S('f_context',e.context);S('f_status',e.status);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','name','glucose','context','status'],
+   stats:(d)=>{
+    const avg=d.length?Math.round(d.reduce((a,b)=>a+(+b.glucose),0)/d.length):0;
+    return [{lbl:'Total',val:d.length,c:'#e91e63'},{lbl:'Avg Reading',val:avg,c:'#f44336'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#3d8ef0'},{lbl:'High Alerts',val:d.filter(x=>+x.glucose>200).length,c:'#ffc107'}];
+   }
+  },
+  {key:'hygiene',icon:'🧼',label:'Hygiene',color:'#26c6da',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Activity</label><select id="f_activity" onchange="toggleOther(this,'f_activity_other')"><option>Shave</option><option>Shower</option><option>Haircut</option><option>Clip Fingernails</option><option>Clip Toenails</option><option>Pluck Eyebrows</option><option>Clean Ears</option><option>Ped Stone</option><option>Other</option></select><input type="text" id="f_activity_other" placeholder="Specify activity" style="margin-top:6px;display:none"></div>
+    <div class="form-group"><label>Details</label><textarea id="f_details"></textarea></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),activity:V('f_activity')==='Other'?V('f_activity_other'):V('f_activity'),details:V('f_details'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_activity',e.activity);S('f_details',e.details);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','activity','details'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#26c6da'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#4caf50'},{lbl:'Showers',val:d.filter(x=>x.activity==='Shower').length,c:'#3d8ef0'},{lbl:'This Month',val:d.filter(x=>isThisMonth(x.date)).length,c:'#9b6dff'}]
+  },
+  {key:'medication',icon:'💊',label:'Medication',color:'#ab47bc',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Medication</label><select id="f_medication" onchange="toggleOther(this,'f_med_other')"><option>Buprenorphine</option><option>Acetaminophen</option><option>Ibuprofen</option><option>Asperin</option><option>Cyclobenzaprine</option><option>Amitryptoline</option><option>Cocaine</option><option>Other</option></select><input type="text" id="f_med_other" placeholder="Specify medication" style="margin-top:6px;display:none"></div>
+    <div class="form-group"><label>Dosage</label><select id="f_dosage" onchange="toggleOther(this,'f_dosage_other')"><option>2mg.</option><option>4mg.</option><option>6mg.</option><option>10mg.</option><option>20mg.</option><option>30mg.</option><option>50mg.</option><option>100mg.</option><option>200mg.</option><option>400mg.</option><option>600mg.</option><option>800mg.</option><option>1000mg.</option><option>1500mg.</option><option>2000mg.</option><option>8mg./2mg.</option><option>16mg./4mg.</option><option>24mg./6mg.</option><option>32mg./8mg.</option><option>Other</option></select><input type="text" id="f_dosage_other" placeholder="Specify dosage" style="margin-top:6px;display:none"></div>
+    <div class="form-row"><div class="form-group"><label>Melt Start Time</label><input type="time" id="f_melt_start" oninput="calcMeltDuration()"></div><div class="form-group"><label>Melt End Time</label><input type="time" id="f_melt_end" oninput="calcMeltDuration()"></div></div>
+    <div class="form-group"><label>Melt Duration</label><input type="text" id="f_melt_dur" readonly placeholder="Auto-calculated"></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),medication:V('f_medication')==='Other'?V('f_med_other'):V('f_medication'),dosage:V('f_dosage')==='Other'?V('f_dosage_other'):V('f_dosage'),melt_start:V('f_melt_start'),melt_end:V('f_melt_end'),melt_dur:V('f_melt_dur'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_medication',e.medication);S('f_dosage',e.dosage);S('f_melt_start',e.melt_start);S('f_melt_end',e.melt_end);S('f_melt_dur',e.melt_dur);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','medication','dosage','melt_dur'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#ab47bc'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#3d8ef0'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#4caf50'},{lbl:'Types Used',val:new Set(d.map(x=>x.medication)).size,c:'#ffc107'}]
+  },
+  {key:'sexual',icon:'💞',label:'Sexual Activity',color:'#ff4081',
+   fields:()=>`
+    <div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div>
+    <div class="form-row"><div class="form-group"><label>Partner</label><select id="f_partner"><option>Yes</option><option>No</option></select></div><div class="form-group"><label>Partner Name</label><input type="text" id="f_partner_name"></div></div>
+    <div class="form-group"><label>Activities Performed</label><textarea id="f_activities"></textarea></div>
+    <div class="form-row"><div class="form-group"><label>Protection</label><select id="f_protection"><option>Yes</option><option>No</option></select></div><div class="form-group"><label>Toys Used</label><select id="f_toys"><option>Yes</option><option>No</option></select></div></div>
+    <div class="form-group"><label>Duration</label><input type="text" id="f_duration" placeholder="e.g. 30 minutes"></div>
+    <div class="form-group"><label>Rating</label>${starRatingHTML('f_rating')}</div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),partner:V('f_partner'),partner_name:V('f_partner_name'),activities:V('f_activities'),protection:V('f_protection'),toys:V('f_toys'),duration:V('f_duration'),rating:getStarVal('f_rating'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_partner',e.partner);S('f_partner_name',e.partner_name);S('f_activities',e.activities);S('f_protection',e.protection);S('f_toys',e.toys);S('f_duration',e.duration);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','partner','partner_name','duration','rating'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#ff4081'},{lbl:'With Partner',val:d.filter(x=>x.partner==='Yes').length,c:'#e91e8c'},{lbl:'This Month',val:d.filter(x=>isThisMonth(x.date)).length,c:'#9b6dff'},{lbl:'Avg Rating',val:avgRating(d),c:'#ffc107'}]
+  },
+  {key:'sleep',icon:'😴',label:'Sleep',color:'#5c6bc0',
+   fields:()=>`
+    <div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div>
+    <div class="form-row"><div class="form-group"><label>Sleep Time</label><input type="time" id="f_sleep_time" oninput="calcSleepDuration()"></div><div class="form-group"><label>Wake-Up Time</label><input type="time" id="f_wake_time" oninput="calcSleepDuration()"></div></div>
+    <div class="form-group"><label>Duration</label><input type="text" id="f_duration" readonly placeholder="Auto-calculated"></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),sleep_time:V('f_sleep_time'),wake_time:V('f_wake_time'),duration:V('f_duration'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_sleep_time',e.sleep_time);S('f_wake_time',e.wake_time);S('f_duration',e.duration);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','sleep_time','wake_time','duration'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#5c6bc0'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#3d8ef0'},{lbl:'Avg Duration',val:avgDuration(d,'duration'),c:'#9b6dff'},{lbl:'This Month',val:d.filter(x=>isThisMonth(x.date)).length,c:'#4caf50'}]
+  },
+  {key:'steps',icon:'👣',label:'Steps',color:'#26a69a',
+   fields:()=>`
+    <div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div>
+    <div class="form-row"><div class="form-group"><label>Watch Reading</label><input type="number" id="f_watch" oninput="calcSteps()"></div><div class="form-group"><label>Ring Reading</label><input type="number" id="f_ring" oninput="calcSteps()"></div></div>
+    <div class="form-group"><label>Day's Step Count (Average)</label><input type="number" id="f_steps" readonly></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),watch:V('f_watch'),ring:V('f_ring'),steps:V('f_steps'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_watch',e.watch);S('f_ring',e.ring);S('f_steps',e.steps);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','watch','ring','steps'],
+   stats:(d)=>{
+    const avg=d.length?Math.round(d.reduce((a,b)=>a+(+b.steps),0)/d.length):0;
+    return [{lbl:'Total Days',val:d.length,c:'#26a69a'},{lbl:'Avg Steps',val:avg.toLocaleString(),c:'#3d8ef0'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#4caf50'},{lbl:'Best Day',val:d.length?Math.max(...d.map(x=>+x.steps)).toLocaleString():0,c:'#ffc107'}];
+   }
+  },
+  {key:'fueloil',icon:'🛢️',label:'Fuel Oil',color:'#8d6e63',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Picked Up Date</label><input type="date" id="f_pu_date" value="${today()}"></div><div class="form-group"><label>Picked Up Time</label><input type="time" id="f_pu_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Picked Up By</label><input type="text" id="f_pu_by"></div>
+    <div class="form-row"><div class="form-group"><label>Vendor</label><input type="text" id="f_vendor"></div><div class="form-group"><label>Total Gallons</label><input type="number" id="f_gallons" step="0.01"></div></div>
+    <div class="form-group"><label>Balance Remaining ($)</label><input type="number" id="f_balance" step="0.01"></div>
+    <div class="form-row"><div class="form-group"><label>Date Added to Tank</label><input type="date" id="f_add_date"></div><div class="form-group"><label>Time Added to Tank</label><input type="time" id="f_add_time"></div></div>
+    <div class="form-group"><label>Added By</label><input type="text" id="f_added_by"></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({pu_date:V('f_pu_date'),pu_time:V('f_pu_time'),pu_by:V('f_pu_by'),vendor:V('f_vendor'),gallons:V('f_gallons'),balance:V('f_balance'),add_date:V('f_add_date'),add_time:V('f_add_time'),added_by:V('f_added_by'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_pu_date',e.pu_date);S('f_pu_time',e.pu_time);S('f_pu_by',e.pu_by);S('f_vendor',e.vendor);S('f_gallons',e.gallons);S('f_balance',e.balance);S('f_add_date',e.add_date);S('f_add_time',e.add_time);S('f_added_by',e.added_by);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['pu_date','vendor','gallons','balance','pu_by'],
+   stats:(d)=>{
+    const totGal=d.reduce((a,b)=>a+(+b.gallons||0),0).toFixed(1);
+    return [{lbl:'Pickups',val:d.length,c:'#8d6e63'},{lbl:'Total Gal',val:totGal,c:'#ff7043'},{lbl:'This Month',val:d.filter(x=>isThisMonth(x.pu_date)).length,c:'#4caf50'},{lbl:'Last Balance',val:'$'+(d.length?d[d.length-1].balance||0:0),c:'#ffc107'}];
+   }
+  },
+  {key:'lptank',icon:'🔥',label:'LP Tank',color:'#ef5350',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date Swapped</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time Swapped</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Swapped With</label><select id="f_swapped_with"><option>Full Tank</option><option>Partial Tank</option></select></div>
+    <div class="form-group"><label>Swapped By</label><input type="text" id="f_swapped_by"></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),swapped_with:V('f_swapped_with'),swapped_by:V('f_swapped_by'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_swapped_with',e.swapped_with);S('f_swapped_by',e.swapped_by);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','swapped_with','swapped_by'],
+   stats:(d)=>[{lbl:'Total Swaps',val:d.length,c:'#ef5350'},{lbl:'Full Tanks',val:d.filter(x=>x.swapped_with==='Full Tank').length,c:'#ff7043'},{lbl:'Partial',val:d.filter(x=>x.swapped_with==='Partial Tank').length,c:'#ffc107'},{lbl:'This Month',val:d.filter(x=>isThisMonth(x.date)).length,c:'#4caf50'}]
+  },
+  {key:'travel',icon:'🚗',label:'Travel',color:'#42a5f5',
+   fields:()=>`
+    <div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div>
+    <div class="form-group"><label>Start Location</label><input type="text" id="f_start_loc" placeholder="Address"></div>
+    <div class="form-row"><div class="form-group"><label>Start Time</label><input type="time" id="f_start_time" oninput="calcTravelDuration()"></div><div class="form-group"><label>Arrival Time</label><input type="time" id="f_arrival_time" oninput="calcTravelDuration()"></div></div>
+    <div class="form-group"><label>Destination</label><input type="text" id="f_destination" placeholder="Address"></div>
+    <div class="form-row"><div class="form-group"><label>Distance (miles)</label><input type="number" id="f_distance" step="0.1"></div><div class="form-group"><label>Duration</label><input type="text" id="f_duration" readonly placeholder="Auto-calculated"></div></div>
+    <div class="form-group"><label>Reason for Trip</label><textarea id="f_reason"></textarea></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>`,
+   collect:()=>({date:V('f_date'),start_loc:V('f_start_loc'),start_time:V('f_start_time'),arrival_time:V('f_arrival_time'),destination:V('f_destination'),distance:V('f_distance'),duration:V('f_duration'),reason:V('f_reason'),comments:V('f_comments')}),
+   fill:(e)=>{S('f_date',e.date);S('f_start_loc',e.start_loc);S('f_start_time',e.start_time);S('f_arrival_time',e.arrival_time);S('f_destination',e.destination);S('f_distance',e.distance);S('f_duration',e.duration);S('f_reason',e.reason);S('f_comments',e.comments);},
+   cols:['date','start_loc','destination','distance','duration'],
+   stats:(d)=>{
+    const totMi=d.reduce((a,b)=>a+(+b.distance||0),0).toFixed(1);
+    return [{lbl:'Trips',val:d.length,c:'#42a5f5'},{lbl:'Total Miles',val:totMi,c:'#3d8ef0'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#4caf50'},{lbl:'This Month',val:d.filter(x=>isThisMonth(x.date)).length,c:'#ffc107'}];
+   }
+  },
+  {key:'weight',icon:'⚖️',label:'Weight',color:'#78909c',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Name</label><input type="text" id="f_name"></div><div class="form-group"><label>Weight (lbs)</label><input type="number" id="f_weight" step="0.1"></div></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),name:V('f_name'),weight:V('f_weight'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_name',e.name);S('f_weight',e.weight);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','name','weight'],
+   stats:(d)=>{
+    const avg=d.length?Math.round(d.reduce((a,b)=>a+(+b.weight),0)/d.length*10)/10:0;
+    return [{lbl:'Entries',val:d.length,c:'#78909c'},{lbl:'Avg Weight',val:avg+' lbs',c:'#3d8ef0'},{lbl:'Latest',val:d.length?(+d[d.length-1].weight)+' lbs':'-',c:'#4caf50'},{lbl:'This Month',val:d.filter(x=>isThisMonth(x.date)).length,c:'#ffc107'}];
+   }
+  },
+  {key:'vape',icon:'💨',label:'Vape Cartridge',color:'#66bb6a',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Brand</label><input type="text" id="f_brand"></div><div class="form-group"><label>Strain</label><input type="text" id="f_strain"></div></div>
+    <div class="form-row"><div class="form-group"><label>Size</label><select id="f_size"><option>.5g.</option><option>1g.</option><option>2g.</option></select></div><div class="form-group"><label>Strength (%)</label><input type="number" id="f_strength"></div></div>
+    <div class="form-row"><div class="form-group"><label>Produced Date</label><input type="date" id="f_prod_date"></div><div class="form-group"><label>Best By Date</label><input type="date" id="f_best_by"></div></div>
+    <div class="form-group"><label>My Rating</label>${starRatingHTML('f_rating')}</div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-row"><div class="form-group"><label>Date Purchased</label><input type="date" id="f_pur_date" value="${today()}"></div><div class="form-group"><label>Price ($)</label><input type="number" id="f_price" step="0.01"></div></div>
+    <div class="form-group"><label>Dispensary</label><select id="f_dispensary" onchange="toggleOther(this,'f_disp_other')"><option>The Magic Mushroom</option><option>Rollin' Twenties</option><option>Other</option></select><input type="text" id="f_disp_other" placeholder="Specify dispensary" style="margin-top:6px;display:none"></div>`,
+   collect:()=>({brand:V('f_brand'),strain:V('f_strain'),size:V('f_size'),strength:V('f_strength'),prod_date:V('f_prod_date'),best_by:V('f_best_by'),rating:getStarVal('f_rating'),comments:V('f_comments'),pur_date:V('f_pur_date'),price:V('f_price'),dispensary:V('f_dispensary')==='Other'?V('f_disp_other'):V('f_dispensary')}),
+   fill:(e)=>{S('f_brand',e.brand);S('f_strain',e.strain);S('f_size',e.size);S('f_strength',e.strength);S('f_prod_date',e.prod_date);S('f_best_by',e.best_by);S('f_pur_date',e.pur_date);S('f_price',e.price);S('f_dispensary',e.dispensary);S('f_comments',e.comments);},
+   cols:['pur_date','brand','strain','size','price','rating'],
+   stats:(d)=>{
+    const tot=d.reduce((a,b)=>a+(+b.price||0),0).toFixed(2);
+    return [{lbl:'Total',val:d.length,c:'#66bb6a'},{lbl:'Total Spent',val:'$'+tot,c:'#4caf50'},{lbl:'This Month',val:d.filter(x=>isThisMonth(x.pur_date)).length,c:'#3d8ef0'},{lbl:'Avg Rating',val:avgRating(d),c:'#ffc107'}];
+   }
+  },
+  {key:'chore',icon:'🧹',label:'Household Chore',color:'#ffca28',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Household</label><input type="text" id="f_household"></div><div class="form-group"><label>Chore</label><input type="text" id="f_chore"></div></div>
+    <div class="form-row"><div class="form-group"><label>Assigned To</label><input type="text" id="f_assigned_to"></div><div class="form-group"><label>Date Assigned</label><input type="date" id="f_assigned_date" value="${today()}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Due Date</label><input type="date" id="f_due_date"></div><div class="form-group"><label>Completed</label><div class="check-row" style="padding-top:22px"><input type="checkbox" id="f_completed"><label for="f_completed" style="text-transform:none;font-size:0.9rem;">Yes</label></div></div></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({household:V('f_household'),chore:V('f_chore'),assigned_to:V('f_assigned_to'),assigned_date:V('f_assigned_date'),due_date:V('f_due_date'),completed:document.getElementById('f_completed')?.checked?'Yes':'No',comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_household',e.household);S('f_chore',e.chore);S('f_assigned_to',e.assigned_to);S('f_assigned_date',e.assigned_date);S('f_due_date',e.due_date);if(document.getElementById('f_completed'))document.getElementById('f_completed').checked=e.completed==='Yes';S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['assigned_date','household','chore','assigned_to','due_date','completed'],
+   stats:(d)=>[{lbl:'Total',val:d.length,c:'#ffca28'},{lbl:'Completed',val:d.filter(x=>x.completed==='Yes').length,c:'#4caf50'},{lbl:'Pending',val:d.filter(x=>x.completed!=='Yes').length,c:'#ff7043'},{lbl:'Overdue',val:d.filter(x=>x.completed!=='Yes'&&x.due_date&&x.due_date<today()).length,c:'#f44336'}]
+  }
+];
+
+// ============================================================
+// HELPER CALCS
+// ============================================================
+function isThisWeek(d){if(!d)return false;const now=new Date();const dt=new Date(d+'T12:00:00');const wk=7*24*60*60*1000;return (now-dt)<wk&&dt<=now;}
+function isThisMonth(d){if(!d)return false;const now=new Date();const dt=new Date(d+'T12:00:00');return dt.getMonth()===now.getMonth()&&dt.getFullYear()===now.getFullYear();}
+function avgPerDay(d){
+  if(!d.length)return 0;
+  const dates=[...new Set(d.map(x=>x.date))].length;
+  return Math.round(d.length/dates*10)/10;
+}
+function avgRating(d){
+  const rated=d.filter(x=>+x.rating>0);
+  if(!rated.length)return 0;
+  return (rated.reduce((a,b)=>a+(+b.rating),0)/rated.length).toFixed(1)+'★';
+}
+function avgDuration(d,key){
+  // parse "Xh Ym" format
+  const parsed=d.map(x=>{
+    const m=x[key]?.match(/(\d+)h\s*(\d+)m/);
+    return m?(+m[1]*60+(+m[2])):0;
+  }).filter(x=>x>0);
+  if(!parsed.length)return '-';
+  const avg=Math.round(parsed.reduce((a,b)=>a+b,0)/parsed.length);
+  return `${Math.floor(avg/60)}h${avg%60}m`;
+}
+
+function V(id){const el=document.getElementById(id);return el?el.value:'';}
+function S(id,val){const el=document.getElementById(id);if(el&&val!==undefined)el.value=val;}
+
+function toggleOther(sel,otherId){
+  const other=document.getElementById(otherId);
+  if(other)other.style.display=sel.value==='Other'?'block':'none';
+}
+
+// Calculated fields
+function calcBPStatus(){
+  const sys=+V('f_systolic'),dia=+V('f_diastolic');
+  if(!sys||!dia)return;
+  let status='';
+  if(sys<90||dia<60)status='Low';
+  else if(sys<120&&dia<80)status='Normal';
+  else if(sys<130&&dia<80)status='Elevated';
+  else if(sys<140||dia<90)status='High Stage 1';
+  else if(sys<180||dia<120)status='High Stage 2';
+  else status='Hypertensive Crisis';
+  S('f_status',status);
+}
+function calcGlucoseStatus(){
+  const g=+V('f_glucose');
+  if(!g)return;
+  let status='';
+  const ctx=V('f_context');
+  if(ctx==='Fasting'){status=g<70?'Low':g<100?'Normal':g<126?'Pre-diabetic':'Diabetic';}
+  else if(ctx==='After Meal'){status=g<140?'Normal':g<200?'Pre-diabetic':'High';}
+  else{status=g<100?'Normal':g<140?'Elevated':'High';}
+  S('f_status',status);
+}
+function calcSleepDuration(){S('f_duration',calcDuration(V('f_sleep_time'),V('f_wake_time')));}
+function calcDevDuration(){S('f_duration',calcDuration(V('f_start_time'),V('f_end_time')));}
+function calcMeltDuration(){S('f_melt_dur',calcDuration(V('f_melt_start'),V('f_melt_end')));}
+function calcTravelDuration(){S('f_duration',calcDuration(V('f_start_time'),V('f_arrival_time')));}
+function calcSteps(){
+  const w=+V('f_watch'),r=+V('f_ring');
+  if(w&&r)S('f_steps',Math.round((w+r)/2));
+  else if(w)S('f_steps',w);
+  else if(r)S('f_steps',r);
+}
+
+// ============================================================
+// CURRENT LOG STATE
+// ============================================================
+let currentLogDef=null;
+let editingId=null;
+
+const currentLog={
+  openAddEntry(){
+    editingId=null;
+    document.getElementById('modal-entry-title').textContent='Add Entry — '+currentLogDef.label;
+    document.getElementById('modal-entry-body').innerHTML=currentLogDef.fields();
+    document.getElementById('modal-entry-save').textContent='Save Entry';
+    openModal('modal-entry');
+  },
+  openHistory(){
+    renderHistoryTable();
+    openModal('modal-history');
+  },
+  saveEntry(){
+    const entry=currentLogDef.collect();
+    if(editingId){
+      DB.update(currentLogDef.key,editingId,entry);
+      notify('Entry updated!');
+    } else {
+      DB.add(currentLogDef.key,entry);
+      notify('Entry saved!');
+    }
+    closeModal('modal-entry');
+    renderSubDash(currentLogDef);
+  }
+};
+
+function renderHistoryTable(){
+  const data=DB.get(currentLogDef.key);
+  const cols=currentLogDef.cols;
+  document.getElementById('modal-history-title').textContent=currentLogDef.label+' History ('+data.length+' entries)';
+  let html='';
+  if(!data.length){
+    html='<div class="empty-state">No entries yet. Add your first entry!</div>';
+  } else {
+    html=`<div class="table-wrap"><table class="data-table"><thead><tr>${cols.map(c=>`<th>${c.replace(/_/g,' ')}</th>`).join('')}<th>Actions</th></tr></thead><tbody>`;
+    html+=data.slice().reverse().map(row=>{
+      const safeId=row.id;
+      return `<tr data-rowid="${safeId}">${cols.map(c=>`<td>${(row[c]||'').toString().replace(/</g,'&lt;')}</td>`).join('')}<td class="act-btns">
+        <button class="btn btn-ghost btn-sm" data-action="edit" data-rowid="${safeId}">✏️ Edit</button>
+        <button class="btn btn-red btn-sm" data-action="del" data-rowid="${safeId}">🗑️ Delete</button>
+      </td></tr>`;
+    }).join('');
+    html+='</tbody></table></div>';
+  }
+  document.getElementById('modal-history-body').innerHTML=html;
+}
+
+function historyClickHandler(e){
+  const btn=e.target.closest('button[data-action]');
+  if(!btn)return;
+  const action=btn.dataset.action;
+  const id=btn.dataset.rowid;
+  if(action==='edit'){ editEntry(id); }
+  else if(action==='del'){ deleteEntry(id); }
+}
+
+// Wire up the history modal listener ONCE at startup
+document.getElementById('modal-history').addEventListener('click', historyClickHandler);
+
+function editEntry(id){
+  const data=DB.get(currentLogDef.key);
+  const entry=data.find(x=>x.id===id);
+  if(!entry)return;
+  editingId=id;
+  document.getElementById('modal-entry-title').textContent='Edit Entry — '+currentLogDef.label;
+  document.getElementById('modal-entry-body').innerHTML=currentLogDef.fields();
+  currentLogDef.fill(entry);
+  document.getElementById('modal-entry-save').textContent='Update Entry';
+  closeModal('modal-history');
+  openModal('modal-entry');
+}
+
+function deleteEntry(id){
+  DB.delete(currentLogDef.key,id);
+  notify('Entry deleted.');
+  renderHistoryTable();
+  renderSubDash(currentLogDef);
+}
+
+// ============================================================
+// RENDER MAIN DASHBOARD
+// ============================================================
+function renderMainDash(){
+  const totalEntries=LOGS.reduce((a,l)=>a+DB.count(l.key),0);
+  document.getElementById('main-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-val">${LOGS.length}</div><div class="stat-lbl">Active Logs</div></div>
+    <div class="stat-card"><div class="stat-val">${totalEntries}</div><div class="stat-lbl">Total Entries</div></div>
+    <div class="stat-card"><div class="stat-val">${LOGS.reduce((a,l)=>a+DB.get(l.key).filter(x=>x.date===today()||x.pu_date===today()||x.pur_date===today()).length,0)}</div><div class="stat-lbl">Today's Entries</div></div>
+    <div class="stat-card"><div class="stat-val">${LOGS.filter(l=>DB.count(l.key)>0).length}</div><div class="stat-lbl">Logs In Use</div></div>`;
+
+  document.getElementById('log-grid').innerHTML=LOGS.map(l=>`
+    <div class="log-btn" onclick="openSubDash('${l.key}')" style="border-top:3px solid ${l.color}">
+      <div class="log-icon">${l.icon}</div>
+      <div class="log-label">${l.label}</div>
+      <div class="log-count">${DB.count(l.key)} entries</div>
+    </div>`).join('');
+}
+
+// ============================================================
+// RENDER SUB DASHBOARD
+// ============================================================
+function openSubDash(key){
+  currentLogDef=LOGS.find(l=>l.key===key);
+  renderSubDash(currentLogDef);
+  showScreen('screen-sub');
+}
+
+function renderSubDash(log){
+  document.getElementById('sub-topbar-title').textContent=log.label+' Log';
+  document.getElementById('sub-icon').textContent=log.icon;
+  document.getElementById('sub-title').textContent=log.label+' Log';
+  document.getElementById('sub-desc').textContent='Track and manage your '+log.label.toLowerCase()+' entries';
+
+  const data=DB.get(log.key);
+  const stats=log.stats(data);
+  document.getElementById('sub-stats').innerHTML=stats.map(s=>`
+    <div class="sub-stat">
+      <div class="sv" style="color:${s.c}">${s.val}</div>
+      <div class="sl">${s.lbl}</div>
+    </div>`).join('');
+
+  // Mini bar chart - last 7 days
+  const last7=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    const dateFields=['date','pu_date','pur_date','assigned_date'];
+    const cnt=data.filter(x=>dateFields.some(f=>x[f]===ds)).length;
+    last7.push({label:d.toLocaleDateString('en',{weekday:'short'}),cnt});
+  }
+  const max=Math.max(...last7.map(x=>x.cnt),1);
+  document.getElementById('sub-chart').innerHTML=`
+    <div style="display:flex;flex-direction:column;width:100%;gap:0;">
+      <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px;font-family:Rajdhani,sans-serif;text-transform:uppercase;">Last 7 Days</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;flex:1;width:100%;">
+        ${last7.map(x=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;">
+          <div style="flex:1;width:100%;display:flex;align-items:flex-end;">
+            <div data-val="${x.cnt}" style="width:100%;height:${Math.max(x.cnt/max*100,4)}%;background:linear-gradient(180deg,${log.color},${log.color}88);border-radius:4px 4px 0 0;min-height:4px;" class="chart-bar"></div>
+          </div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">${x.label}</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);font-weight:600">${x.cnt}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// DB MANAGER
+// ============================================================
+function openDbManager(){
+  const body=document.getElementById('modal-db-body');
+  body.innerHTML=`
+    <div class="db-section">
+      <h4>Export Data</h4>
+      <div class="db-grid">
+        ${LOGS.map(l=>`<div class="db-item">
+          <div class="db-item-name">${l.icon} ${l.label}</div>
+          <div class="db-item-count">${DB.count(l.key)} entries</div>
+          <div class="db-item-btns">
+            <button class="btn btn-teal btn-sm" onclick="exportLog('${l.key}','${l.label}')">⬇ Export CSV</button>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn btn-green" onclick="exportAll()">⬇ Export ALL Logs</button>
+      </div>
+    </div>
+    <div class="db-section">
+      <h4>Import Data</h4>
+      <div class="db-grid">
+        ${LOGS.map(l=>`<div class="db-item">
+          <div class="db-item-name">${l.icon} ${l.label}</div>
+          <div class="db-item-btns">
+            <label class="btn btn-purple btn-sm" style="cursor:pointer">⬆ Import CSV<input type="file" accept=".csv" style="display:none" onchange="importLog(event,'${l.key}')"></label>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="db-section">
+      <h4>⚠️ Danger Zone</h4>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${LOGS.map(l=>`<button class="btn btn-red btn-sm" onclick="clearLog('${l.key}','${l.label}')">🗑️ Clear ${l.label}</button>`).join('')}
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn btn-red" onclick="clearAll()">⚠️ Clear ALL Data</button>
+      </div>
+    </div>`;
+  openModal('modal-db');
+}
+
+function exportLog(key,label){
+  const data=DB.get(key);
+  if(!data.length){notify('No data to export for '+label,true);return;}
+  downloadCSV(data,label.replace(/\s/g,'_'));
+  notify('Exported '+data.length+' entries from '+label);
+}
+function exportAll(){
+  LOGS.forEach(l=>{ if(DB.count(l.key)>0) downloadCSV(DB.get(l.key),l.label.replace(/\s/g,'_')); });
+  notify('Exported all logs!');
+}
+function importLog(evt,key){
+  const file=evt.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const rows=fromCSV(e.target.result);
+    const existing=DB.get(key);
+    rows.forEach(r=>{ r.id=Date.now()+'_'+Math.random().toString(36).slice(2); existing.push(r); });
+    DB.set(key,existing);
+    notify('Imported '+rows.length+' entries!');
+    openDbManager();
+  };
+  reader.readAsText(file);
+}
+function clearLog(key,label){
+  if(!confirm('Clear all '+label+' data? This cannot be undone.'))return;
+  DB.set(key,[]);
+  notify('Cleared '+label+' data.');
+  openDbManager();
+}
+function clearAll(){
+  if(!confirm('⚠️ Clear ALL log data? This cannot be undone!'))return;
+  LOGS.forEach(l=>DB.set(l.key,[]));
+  notify('All data cleared.');
+  openDbManager();
+  renderMainDash();
+}
+
+// ============================================================
+// GEMINI CHAT
+// ============================================================
+async function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const msg=inp.value.trim();
+  if(!msg)return;
+  inp.value='';
+  addChatMsg(msg,'user');
+
+  // Gather log summaries for context
+  const context=LOGS.map(l=>{
+    const d=DB.get(l.key);
+    return `${l.label}: ${d.length} entries. Recent: ${d.slice(-3).map(x=>JSON.stringify(x)).join('; ')}`;
+  }).join('\n');
+
+  const thinking=addChatMsg('Thinking...','ai chat-thinking');
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:`You are a personal health and activity assistant. The user has the following log data:\n\n${context}\n\nAnswer questions about their data, provide health insights, and help them understand their patterns. Be concise and helpful.`,
+        messages:[{role:'user',content:msg}]
+      })
+    });
+    const data=await resp.json();
+    thinking.remove();
+    const text=data.content?.[0]?.text||'Sorry, I had trouble responding.';
+    addChatMsg(text,'ai');
+  }catch(e){
+    thinking.remove();
+    addChatMsg('Connection error. Please check your network.','ai');
+  }
+}
+
+function addChatMsg(text,cls){
+  const el=document.createElement('div');
+  el.className='chat-msg '+cls;
+  el.textContent=text;
+  const msgs=document.getElementById('chat-messages');
+  msgs.appendChild(el);
+  msgs.scrollTop=msgs.scrollHeight;
+  return el;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderMainDash();
+</script>
+</body>
+</html>
