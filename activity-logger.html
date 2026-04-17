@@ -1,3 +1,319 @@
+<?php
+// ============================================================
+// DATABASE CONFIG & CONNECTION
+// ============================================================
+define('DB_HOST', 'sql105.byethost10.com');
+define('DB_USER', 'b10_39913602');
+define('DB_PASS', 'Cr0ssfire');
+define('DB_NAME', 'b10_39913602_activitylogs');
+
+function getDB() {
+    static $pdo = null;
+    if ($pdo === null) {
+        try {
+            $pdo = new PDO(
+                "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
+                DB_USER, DB_PASS,
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+            );
+        } catch (PDOException $e) {
+            die(json_encode(['error' => 'DB connection failed: ' . $e->getMessage()]));
+        }
+    }
+    return $pdo;
+}
+
+// ============================================================
+// TABLE DEFINITIONS - auto-create on first run
+// ============================================================
+$TABLE_SCHEMAS = [
+    'bp' => "CREATE TABLE IF NOT EXISTS `log_bp` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME, `name` VARCHAR(100),
+        `systolic` INT, `diastolic` INT, `pulse` INT,
+        `status` VARCHAR(50), `arm` VARCHAR(20),
+        `position` VARCHAR(50), `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'cigarette' => "CREATE TABLE IF NOT EXISTS `log_cigarette` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME, `brand` VARCHAR(100),
+        `type` VARCHAR(50), `size` VARCHAR(30),
+        `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'device' => "CREATE TABLE IF NOT EXISTS `log_device` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `device` VARCHAR(100),
+        `start_time` TIME, `pct_start` INT,
+        `end_time` TIME, `pct_end` INT,
+        `full_charge` VARCHAR(5), `amt_charged` INT,
+        `duration` VARCHAR(30), `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'exercise' => "CREATE TABLE IF NOT EXISTS `log_exercise` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `start_time` TIME,
+        `ex_type` VARCHAR(50), `exercise` VARCHAR(100),
+        `sets` INT, `reps` INT, `details` TEXT,
+        `end_time` TIME, `rating` INT,
+        `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'food' => "CREATE TABLE IF NOT EXISTS `log_food` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME, `meal` VARCHAR(30),
+        `prepared_by` VARCHAR(50), `main_dish` VARCHAR(150),
+        `sides` TEXT, `rating` INT,
+        `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'glucose' => "CREATE TABLE IF NOT EXISTS `log_glucose` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME, `name` VARCHAR(100),
+        `glucose` INT, `context` VARCHAR(30),
+        `status` VARCHAR(50), `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'hygiene' => "CREATE TABLE IF NOT EXISTS `log_hygiene` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME, `activity` VARCHAR(100),
+        `details` TEXT, `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'medication' => "CREATE TABLE IF NOT EXISTS `log_medication` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME, `medication` VARCHAR(100),
+        `dosage` VARCHAR(30), `melt_start` TIME, `melt_end` TIME,
+        `melt_dur` VARCHAR(30), `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'sexual' => "CREATE TABLE IF NOT EXISTS `log_sexual` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `partner` VARCHAR(5), `partner_name` VARCHAR(100),
+        `activities` TEXT, `protection` VARCHAR(5),
+        `toys` VARCHAR(5), `duration` VARCHAR(50),
+        `rating` INT, `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'sleep' => "CREATE TABLE IF NOT EXISTS `log_sleep` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `sleep_time` TIME, `wake_time` TIME,
+        `duration` VARCHAR(30), `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'steps' => "CREATE TABLE IF NOT EXISTS `log_steps` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `watch` INT, `ring` INT, `steps` INT,
+        `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'fueloil' => "CREATE TABLE IF NOT EXISTS `log_fueloil` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `pu_date` DATE, `pu_time` TIME, `pu_by` VARCHAR(100),
+        `vendor` VARCHAR(100), `gallons` DECIMAL(8,2),
+        `balance` DECIMAL(10,2), `add_date` DATE, `add_time` TIME,
+        `added_by` VARCHAR(100), `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'lptank' => "CREATE TABLE IF NOT EXISTS `log_lptank` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME, `swapped_with` VARCHAR(30),
+        `swapped_by` VARCHAR(100), `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'travel' => "CREATE TABLE IF NOT EXISTS `log_travel` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `start_loc` VARCHAR(255),
+        `start_time` TIME, `arrival_time` TIME,
+        `destination` VARCHAR(255), `distance` DECIMAL(8,1),
+        `duration` VARCHAR(30), `reason` TEXT, `comments` TEXT,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'weight' => "CREATE TABLE IF NOT EXISTS `log_weight` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME, `name` VARCHAR(100),
+        `weight` DECIMAL(6,1), `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'vape' => "CREATE TABLE IF NOT EXISTS `log_vape` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `brand` VARCHAR(100), `strain` VARCHAR(100),
+        `size` VARCHAR(20), `strength` INT,
+        `prod_date` DATE, `best_by` DATE,
+        `rating` INT, `comments` TEXT,
+        `pur_date` DATE, `price` DECIMAL(8,2), `dispensary` VARCHAR(100),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'chore' => "CREATE TABLE IF NOT EXISTS `log_chore` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `household` VARCHAR(100), `chore` VARCHAR(150),
+        `assigned_to` VARCHAR(100), `assigned_date` DATE,
+        `due_date` DATE, `completed` VARCHAR(5),
+        `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'bathroom' => "CREATE TABLE IF NOT EXISTS `log_bathroom` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME,
+        `usage_type` VARCHAR(50), `urge_level` VARCHAR(30),
+        `discomfort_level` VARCHAR(30),
+        `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'beverage' => "CREATE TABLE IF NOT EXISTS `log_beverage` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `date` DATE, `time` TIME,
+        `beverage_type` VARCHAR(50), `brand` VARCHAR(100),
+        `size` VARCHAR(30),
+        `comments` TEXT, `location` VARCHAR(255),
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+];
+
+function initTables() {
+    global $TABLE_SCHEMAS;
+    $db = getDB();
+    foreach ($TABLE_SCHEMAS as $sql) {
+        $db->exec($sql);
+    }
+}
+
+// Allowed columns per table (whitelist for safety)
+$TABLE_COLUMNS = [
+    'bp'         => ['date','time','name','systolic','diastolic','pulse','status','arm','position','comments','location'],
+    'cigarette'  => ['date','time','brand','type','size','comments','location'],
+    'device'     => ['date','device','start_time','pct_start','end_time','pct_end','full_charge','amt_charged','duration','comments','location'],
+    'exercise'   => ['date','start_time','ex_type','exercise','sets','reps','details','end_time','rating','comments','location'],
+    'food'       => ['date','time','meal','prepared_by','main_dish','sides','rating','comments','location'],
+    'glucose'    => ['date','time','name','glucose','context','status','comments','location'],
+    'hygiene'    => ['date','time','activity','details','comments','location'],
+    'medication' => ['date','time','medication','dosage','melt_start','melt_end','melt_dur','comments','location'],
+    'sexual'     => ['date','partner','partner_name','activities','protection','toys','duration','rating','comments','location'],
+    'sleep'      => ['date','sleep_time','wake_time','duration','comments','location'],
+    'steps'      => ['date','watch','ring','steps','comments','location'],
+    'fueloil'    => ['pu_date','pu_time','pu_by','vendor','gallons','balance','add_date','add_time','added_by','comments','location'],
+    'lptank'     => ['date','time','swapped_with','swapped_by','comments','location'],
+    'travel'     => ['date','start_loc','start_time','arrival_time','destination','distance','duration','reason','comments'],
+    'weight'     => ['date','time','name','weight','comments','location'],
+    'vape'       => ['brand','strain','size','strength','prod_date','best_by','rating','comments','pur_date','price','dispensary'],
+    'chore'      => ['household','chore','assigned_to','assigned_date','due_date','completed','comments','location'],
+    'bathroom'   => ['date','time','usage_type','urge_level','discomfort_level','comments','location'],
+    'beverage'   => ['date','time','beverage_type','brand','size','comments','location'],
+];
+
+// ============================================================
+// API HANDLER
+// ============================================================
+if (isset($_GET['api'])) {
+    header('Content-Type: application/json');
+    initTables();
+
+    $action = $_GET['api'] ?? '';
+    $logKey = preg_replace('/[^a-z]/', '', strtolower($_GET['log'] ?? ''));
+
+    global $TABLE_COLUMNS;
+    $allowed = $TABLE_COLUMNS[$logKey] ?? null;
+
+    if ($action === 'counts') {
+        // Return counts for all logs
+        $db = getDB();
+        $counts = [];
+        foreach ($TABLE_COLUMNS as $key => $cols) {
+            try {
+                $stmt = $db->query("SELECT COUNT(*) as c FROM `log_{$key}`");
+                $counts[$key] = (int)$stmt->fetch()['c'];
+            } catch (Exception $e) {
+                $counts[$key] = 0;
+            }
+        }
+        echo json_encode($counts);
+        exit;
+    }
+
+    if ($action === 'list' && $allowed) {
+        $db = getDB();
+        $stmt = $db->query("SELECT * FROM `log_{$logKey}` ORDER BY id DESC LIMIT 500");
+        echo json_encode($stmt->fetchAll());
+        exit;
+    }
+
+    if ($action === 'save' && $allowed) {
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (!$data) { echo json_encode(['error'=>'No data']); exit; }
+
+        $id = isset($data['id']) ? (int)$data['id'] : 0;
+        unset($data['id'], $data['created_at']);
+
+        // Filter to allowed columns only
+        $filtered = array_filter($data, fn($k) => in_array($k, $allowed), ARRAY_FILTER_USE_KEY);
+
+        // Sanitize empty strings to null for numeric/date fields
+        foreach ($filtered as $k => &$v) {
+            if ($v === '' || $v === null) $v = null;
+        }
+        unset($v);
+
+        $db = getDB();
+        if ($id > 0) {
+            // UPDATE
+            $sets = implode(', ', array_map(fn($k) => "`$k` = :$k", array_keys($filtered)));
+            $filtered['id'] = $id;
+            $stmt = $db->prepare("UPDATE `log_{$logKey}` SET {$sets} WHERE id = :id");
+        } else {
+            // INSERT
+            $cols = implode(', ', array_map(fn($k) => "`$k`", array_keys($filtered)));
+            $vals = implode(', ', array_map(fn($k) => ":$k", array_keys($filtered)));
+            $stmt = $db->prepare("INSERT INTO `log_{$logKey}` ({$cols}) VALUES ({$vals})");
+        }
+        $stmt->execute($filtered);
+        $newId = $id > 0 ? $id : $db->lastInsertId();
+        echo json_encode(['success' => true, 'id' => $newId]);
+        exit;
+    }
+
+    if ($action === 'delete' && $allowed) {
+        $id = (int)($_GET['id'] ?? 0);
+        if (!$id) { echo json_encode(['error'=>'No ID']); exit; }
+        $db = getDB();
+        $db->prepare("DELETE FROM `log_{$logKey}` WHERE id = :id")->execute([':id' => $id]);
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    if ($action === 'clear' && $allowed) {
+        $db = getDB();
+        $db->exec("DELETE FROM `log_{$logKey}`");
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    echo json_encode(['error' => 'Unknown action']);
+    exit;
+}
+
+// First time: ensure tables exist when loading the page too
+try { initTables(); } catch (Exception $e) { /* silent */ }
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,22 +348,14 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Exo 2',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden;}
 h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
-
-/* SCROLLBAR */
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-track{background:var(--bg-secondary);}
 ::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px;}
-
-/* SCREENS */
 .screen{display:none;min-height:100vh;}
 .screen.active{display:block;}
-
-/* TOP BAR */
 .topbar{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .topbar-title{font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:700;color:var(--accent-blue);}
 .topbar-actions{display:flex;gap:10px;}
-
-/* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:24px;border:none;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:600;font-size:0.85rem;transition:all 0.2s;text-decoration:none;white-space:nowrap;}
 .btn-primary{background:linear-gradient(135deg,var(--accent-blue),#2563eb);color:#fff;box-shadow:0 2px 12px rgba(61,142,240,0.35);}
 .btn-primary:hover{box-shadow:0 4px 20px rgba(61,142,240,0.55);transform:translateY(-1px);}
@@ -56,31 +364,23 @@ h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
 .btn-purple{background:linear-gradient(135deg,var(--accent-purple),#7c3aed);color:#fff;box-shadow:0 2px 12px rgba(155,109,255,0.3);}
 .btn-purple:hover{box-shadow:0 4px 20px rgba(155,109,255,0.5);transform:translateY(-1px);}
 .btn-orange{background:linear-gradient(135deg,var(--accent-orange),#e64a19);color:#fff;box-shadow:0 2px 12px rgba(255,112,67,0.3);}
-.btn-orange:hover{box-shadow:0 4px 20px rgba(255,112,67,0.5);transform:translateY(-1px);}
 .btn-red{background:linear-gradient(135deg,var(--accent-red),#c62828);color:#fff;box-shadow:0 2px 12px rgba(244,67,54,0.3);}
 .btn-red:hover{box-shadow:0 4px 20px rgba(244,67,54,0.5);transform:translateY(-1px);}
 .btn-green{background:linear-gradient(135deg,var(--accent-green),#388e3c);color:#fff;box-shadow:0 2px 12px rgba(76,175,80,0.3);}
 .btn-green:hover{box-shadow:0 4px 20px rgba(76,175,80,0.5);transform:translateY(-1px);}
 .btn-yellow{background:linear-gradient(135deg,var(--accent-yellow),#f57c00);color:#111;box-shadow:0 2px 12px rgba(255,193,7,0.3);}
-.btn-yellow:hover{box-shadow:0 4px 20px rgba(255,193,7,0.5);transform:translateY(-1px);}
 .btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border);}
 .btn-ghost:hover{background:var(--bg-elevated);color:var(--text-primary);}
 .btn-sm{padding:6px 14px;font-size:0.78rem;border-radius:20px;}
 .btn-icon{padding:8px 12px;}
-
-/* MAIN DASHBOARD GRID */
 .dash-container{padding:20px;max-width:1200px;margin:0 auto;}
 .dash-header{margin-bottom:24px;text-align:center;}
 .dash-header h1{font-size:2.2rem;background:linear-gradient(135deg,var(--accent-blue),var(--accent-teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .dash-header p{color:var(--text-secondary);font-size:0.9rem;margin-top:4px;}
-
-/* STATS ROW */
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
 .stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;}
 .stat-card .stat-val{font-family:'Rajdhani',sans-serif;font-size:2rem;font-weight:700;color:var(--accent-blue);}
 .stat-card .stat-lbl{font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;}
-
-/* LOG BUTTON GRID */
 .log-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;margin-bottom:24px;}
 .log-btn{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 14px;text-align:center;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;overflow:hidden;}
 .log-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,0.02));pointer-events:none;}
@@ -88,8 +388,6 @@ h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
 .log-btn .log-icon{font-size:2.2rem;line-height:1;}
 .log-btn .log-label{font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:600;color:var(--text-primary);}
 .log-btn .log-count{font-size:0.72rem;color:var(--text-muted);background:var(--bg-elevated);padding:2px 8px;border-radius:10px;}
-
-/* SUB-DASHBOARD */
 .sub-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
 .sub-header-icon{font-size:2rem;}
 .sub-header h2{font-size:1.8rem;font-weight:700;}
@@ -98,13 +396,9 @@ h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
 .sub-stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;}
 .sub-stat .sv{font-family:'Rajdhani',sans-serif;font-size:1.7rem;font-weight:700;}
 .sub-stat .sl{font-size:0.72rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;}
-
-/* CHART AREA */
 .chart-area{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px;height:200px;display:flex;align-items:flex-end;gap:4px;overflow:hidden;}
 .chart-bar{flex:1;background:linear-gradient(180deg,var(--accent-blue),#1a4fa3);border-radius:4px 4px 0 0;min-height:4px;transition:height 0.5s ease;position:relative;}
 .chart-bar:hover::after{content:attr(data-val);position:absolute;top:-22px;left:50%;transform:translateX(-50%);background:var(--bg-elevated);color:var(--text-primary);font-size:0.7rem;padding:2px 6px;border-radius:4px;white-space:nowrap;}
-
-/* TABLE */
 .table-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:auto;}
 .data-table{width:100%;border-collapse:collapse;font-size:0.83rem;}
 .data-table th{background:var(--bg-elevated);color:var(--text-secondary);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.5px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-family:'Rajdhani',sans-serif;font-weight:600;}
@@ -113,8 +407,6 @@ h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
 .data-table tr:hover td{background:var(--bg-elevated);}
 .data-table .act-btns{display:flex;gap:6px;}
 .empty-state{text-align:center;padding:40px;color:var(--text-muted);font-size:0.9rem;}
-
-/* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:16px;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
@@ -125,8 +417,6 @@ h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
 .modal-close:hover{color:var(--text-primary);}
 .modal-body{padding:20px;}
 .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
-
-/* FORM */
 .form-group{margin-bottom:14px;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 label{display:block;font-size:0.78rem;color:var(--text-secondary);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.4px;font-weight:600;}
@@ -137,14 +427,10 @@ select option{background:var(--bg-elevated);}
 input[type=checkbox]{width:auto;accent-color:var(--accent-blue);}
 .check-row{display:flex;align-items:center;gap:8px;}
 .check-row input{width:18px;height:18px;}
-
-/* STAR RATING */
 .star-rating{display:flex;gap:4px;flex-direction:row-reverse;justify-content:flex-end;}
 .star-rating input{display:none;}
 .star-rating label{font-size:1.4rem;cursor:pointer;color:var(--text-muted);transition:color 0.15s;}
 .star-rating input:checked ~ label,.star-rating label:hover,.star-rating label:hover ~ label{color:var(--accent-yellow);}
-
-/* GEMINI CHAT */
 .chat-container{display:flex;flex-direction:column;height:calc(100vh - 60px);}
 .chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;}
 .chat-msg{max-width:75%;padding:12px 16px;border-radius:var(--radius);font-size:0.88rem;line-height:1.5;}
@@ -153,8 +439,6 @@ input[type=checkbox]{width:auto;accent-color:var(--accent-blue);}
 .chat-input-area{padding:16px;border-top:1px solid var(--border);display:flex;gap:10px;}
 .chat-input-area input{flex:1;}
 .chat-thinking{opacity:0.6;font-style:italic;}
-
-/* DB MANAGER */
 .db-section{margin-bottom:20px;}
 .db-section h4{font-size:1rem;margin-bottom:10px;color:var(--accent-teal);}
 .db-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
@@ -162,20 +446,18 @@ input[type=checkbox]{width:auto;accent-color:var(--accent-blue);}
 .db-item-name{font-size:0.85rem;font-weight:600;}
 .db-item-count{font-size:0.72rem;color:var(--text-muted);}
 .db-item-btns{display:flex;gap:6px;}
-
-/* NOTIFICATION */
 .notif{position:fixed;bottom:20px;right:20px;background:var(--bg-elevated);border:1px solid var(--accent-teal);color:var(--text-primary);padding:12px 20px;border-radius:var(--radius);font-size:0.88rem;z-index:9999;transform:translateY(100px);opacity:0;transition:all 0.3s;box-shadow:var(--shadow);}
 .notif.show{transform:translateY(0);opacity:1;}
 .notif.error{border-color:var(--accent-red);}
-
-/* STATUS BADGES */
 .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}
 .badge-normal{background:rgba(76,175,80,0.2);color:#4caf50;}
 .badge-elevated{background:rgba(255,193,7,0.2);color:#ffc107;}
 .badge-high{background:rgba(255,112,67,0.2);color:#ff7043;}
 .badge-crisis{background:rgba(244,67,54,0.2);color:#f44336;}
 .badge-low{background:rgba(61,142,240,0.2);color:#3d8ef0;}
-
+.db-status{font-size:0.72rem;padding:3px 10px;border-radius:10px;font-weight:600;}
+.db-ok{background:rgba(76,175,80,0.15);color:#4caf50;border:1px solid rgba(76,175,80,0.3);}
+.db-err{background:rgba(244,67,54,0.15);color:#f44336;border:1px solid rgba(244,67,54,0.3);}
 @media(max-width:600px){
   .form-row{grid-template-columns:1fr;}
   .log-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
@@ -187,7 +469,6 @@ input[type=checkbox]{width:auto;accent-color:var(--accent-blue);}
 </head>
 <body>
 
-<!-- NOTIFICATION -->
 <div class="notif" id="notif"></div>
 
 <!-- ===== MAIN DASHBOARD ===== -->
@@ -209,7 +490,7 @@ input[type=checkbox]{width:auto;accent-color:var(--accent-blue);}
   </div>
 </div>
 
-<!-- ===== SUB-DASHBOARD (shared) ===== -->
+<!-- ===== SUB-DASHBOARD ===== -->
 <div class="screen" id="screen-sub">
   <div class="topbar">
     <div class="topbar-title" id="sub-topbar-title">Log Dashboard</div>
@@ -227,34 +508,39 @@ input[type=checkbox]{width:auto;accent-color:var(--accent-blue);}
     </div>
     <div class="sub-actions">
       <button class="btn btn-primary" onclick="currentLog.openAddEntry()">➕ Add Entry</button>
-      <button class="btn btn-ghost" onclick="currentLog.openHistory()">📋 View History</button>
+      <button class="btn btn-ghost btn-sm" onclick="currentLog.refresh()">🔄 Refresh</button>
     </div>
-    <div class="sub-stats" id="sub-stats"></div>
-    <div class="chart-area" id="sub-chart"></div>
+    <div class="sub-stats" id="sub-stats-row"></div>
+    <div id="sub-chart"></div>
+    <div class="table-wrap">
+      <table class="data-table" id="sub-table">
+        <thead id="sub-thead"></thead>
+        <tbody id="sub-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
-<!-- ===== CHAT SCREEN ===== -->
+<!-- ===== CHAT ===== -->
 <div class="screen" id="screen-chat">
   <div class="topbar">
-    <div class="topbar-title">🤖 AI Assistant</div>
+    <div class="topbar-title">🤖 AI Health Assistant</div>
     <div class="topbar-actions">
-      <button class="btn btn-ghost btn-sm" onclick="goMain()">← Back</button>
+      <button class="btn btn-ghost btn-sm" onclick="goMain()">🏠 Dashboard</button>
     </div>
   </div>
   <div class="chat-container">
     <div class="chat-messages" id="chat-messages">
-      <div class="chat-msg ai">Hi! I'm your Activity Logger AI. Ask me about your logged data, trends, or health insights. I can access all your logs!</div>
+      <div class="chat-msg ai">👋 Hi! I'm your personal health &amp; activity assistant. Ask me anything about your logged data, patterns, or health insights!</div>
     </div>
     <div class="chat-input-area">
-      <input type="text" id="chat-input" placeholder="Ask about your logs..." onkeydown="if(event.key==='Enter')sendChat()">
+      <input type="text" id="chat-input" placeholder="Ask about your health data..." onkeydown="if(event.key==='Enter')sendChat()">
       <button class="btn btn-primary" onclick="sendChat()">Send</button>
     </div>
   </div>
 </div>
 
-<!-- ===== MODALS ===== -->
-<!-- Add/Edit Entry Modal -->
+<!-- ===== ADD/EDIT MODAL ===== -->
 <div class="modal-overlay" id="modal-entry">
   <div class="modal">
     <div class="modal-header">
@@ -262,29 +548,18 @@ input[type=checkbox]{width:auto;accent-color:var(--accent-blue);}
       <button class="modal-close" onclick="closeModal('modal-entry')">✕</button>
     </div>
     <div class="modal-body" id="modal-entry-body"></div>
-    <div class="modal-footer" id="modal-entry-footer">
+    <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-entry')">Cancel</button>
-      <button class="btn btn-primary" id="modal-entry-save" onclick="currentLog.saveEntry()">Save Entry</button>
+      <button class="btn btn-primary" onclick="saveEntry()">💾 Save</button>
     </div>
   </div>
 </div>
 
-<!-- History Modal -->
-<div class="modal-overlay" id="modal-history">
-  <div class="modal modal-wide">
-    <div class="modal-header">
-      <h3 id="modal-history-title">History</h3>
-      <button class="modal-close" onclick="closeModal('modal-history')">✕</button>
-    </div>
-    <div class="modal-body" id="modal-history-body"></div>
-  </div>
-</div>
-
-<!-- DB Manager Modal -->
+<!-- ===== DB MANAGER MODAL ===== -->
 <div class="modal-overlay" id="modal-db">
   <div class="modal modal-wide">
     <div class="modal-header">
-      <h3>🗄️ Database Management</h3>
+      <h3>🗄️ Database Manager</h3>
       <button class="modal-close" onclick="closeModal('modal-db')">✕</button>
     </div>
     <div class="modal-body" id="modal-db-body"></div>
@@ -293,133 +568,142 @@ input[type=checkbox]{width:auto;accent-color:var(--accent-blue);}
 
 <script>
 // ============================================================
-// DATA LAYER
+// API HELPERS
 // ============================================================
-const DB = {
-  get(key){ try{return JSON.parse(localStorage.getItem('al_'+key)||'[]');}catch{return [];} },
-  set(key,val){ localStorage.setItem('al_'+key,JSON.stringify(val)); },
-  add(key,entry){ const d=DB.get(key); entry.id='id'+Date.now()+Math.random().toString(36).slice(2).replace(/[^a-z0-9]/g,''); d.push(entry); DB.set(key,d); return entry; },
-  update(key,id,entry){ const d=DB.get(key); const i=d.findIndex(x=>x.id===id); if(i>=0){d[i]={...entry,id}; DB.set(key,d);} },
-  delete(key,id){ DB.set(key,DB.get(key).filter(x=>x.id!==id)); },
-  count(key){ return DB.get(key).length; }
-};
+async function apiCall(params, body=null) {
+  const url = '?' + new URLSearchParams(params).toString();
+  const opts = body
+    ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }
+    : { method:'GET' };
+  const r = await fetch(url, opts);
+  return r.json();
+}
 
 // ============================================================
-// UTILS
+// UTILITY
 // ============================================================
-function notify(msg,err=false){
+function today(){ return new Date().toISOString().slice(0,10); }
+function nowTime(){ return new Date().toTimeString().slice(0,5); }
+function notify(msg, err=false){
   const n=document.getElementById('notif');
-  n.textContent=msg; n.className='notif'+(err?' error':'');
+  n.textContent=msg;
+  n.className='notif'+(err?' error':'');
   n.classList.add('show');
   setTimeout(()=>n.classList.remove('show'),3000);
 }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-function goMain(){showScreen('screen-main');renderMainDash();}
-function openChat(){showScreen('screen-chat');}
+function goMain(){ showScreen('screen-main'); renderMainDash(); }
+function openChat(){ showScreen('screen-chat'); }
 
-function today(){return new Date().toISOString().split('T')[0];}
-function nowTime(){return new Date().toTimeString().slice(0,5);}
-function fmtDate(d){if(!d)return '';try{return new Date(d+'T12:00:00').toLocaleDateString();}catch{return d;}}
-function calcDuration(start,end){
-  if(!start||!end)return '';
-  const [sh,sm]=start.split(':').map(Number);
-  const [eh,em]=end.split(':').map(Number);
-  let mins=(eh*60+em)-(sh*60+sm);
-  if(mins<0)mins+=1440;
-  return `${Math.floor(mins/60)}h ${mins%60}m`;
-}
-
-// CSV helpers
-function toCSV(data){
-  if(!data.length)return '';
-  const keys=Object.keys(data[0]).filter(k=>k!=='id');
-  const rows=[keys.join(','),...data.map(r=>keys.map(k=>`"${(r[k]??'').toString().replace(/"/g,'""')}"`).join(','))];
-  return rows.join('\n');
-}
-function fromCSV(text){
-  const lines=text.trim().split('\n');
-  if(lines.length<2)return[];
-  const keys=lines[0].split(',').map(k=>k.trim().replace(/^"|"$/g,''));
-  return lines.slice(1).map(line=>{
-    const vals=[];let cur='',inQ=false;
-    for(let c of line){if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){vals.push(cur);cur='';}else cur+=c;}
-    vals.push(cur);
-    const obj={};keys.forEach((k,i)=>obj[k]=(vals[i]||'').replace(/^"|"$/g,''));
-    return obj;
-  });
-}
-function downloadCSV(data,name){
-  const blob=new Blob([toCSV(data)],{type:'text/csv'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'.csv';a.click();
-}
-
-// Star rating HTML
-function starRatingHTML(name,val=0){
-  return `<div class="star-rating">
-    ${[5,4,3,2,1].map(n=>`<input type="radio" name="${name}" id="${name}_${n}" value="${n}" ${n==val?'checked':''}><label for="${name}_${n}">★</label>`).join('')}
-  </div>`;
+function starRatingHTML(name){
+  let h=`<div class="star-rating">`;
+  for(let i=5;i>=1;i--) h+=`<input type="radio" id="${name}_${i}" name="${name}" value="${i}"><label for="${name}_${i}">★</label>`;
+  return h+'</div>';
 }
 function getStarVal(name){
   const el=document.querySelector(`input[name="${name}"]:checked`);
   return el?el.value:'0';
 }
+function setStarVal(name,val){
+  if(!val||val==='0')return;
+  const el=document.getElementById(name+'_'+val);
+  if(el)el.checked=true;
+}
+function toggleOther(sel,otherId){
+  const other=document.getElementById(otherId);
+  if(other)other.style.display=sel.value==='Other'?'block':'none';
+}
+function V(id){const el=document.getElementById(id);return el?el.value:'';}
+function S(id,val){const el=document.getElementById(id);if(el&&val!==undefined&&val!==null)el.value=val;}
+
+function isThisWeek(d){ if(!d)return false; const now=new Date(),dt=new Date(d+'T12:00:00'); return (now-dt)<7*24*60*60*1000&&dt<=now; }
+function isThisMonth(d){ if(!d)return false; const now=new Date(),dt=new Date(d+'T12:00:00'); return dt.getMonth()===now.getMonth()&&dt.getFullYear()===now.getFullYear(); }
+function avgPerDay(d){ if(!d.length)return 0; const dates=[...new Set(d.map(x=>x.date))].length; return Math.round(d.length/dates*10)/10; }
+function avgRating(d){ const r=d.filter(x=>+x.rating>0); if(!r.length)return 0; return (r.reduce((a,b)=>a+(+b.rating),0)/r.length).toFixed(1)+'★'; }
+function avgDuration(d,key){
+  const p=d.map(x=>{ const m=x[key]?.match(/(\d+)h\s*(\d+)m/); return m?(+m[1]*60+(+m[2])):0; }).filter(x=>x>0);
+  if(!p.length)return '-'; const a=Math.round(p.reduce((a,b)=>a+b,0)/p.length); return `${Math.floor(a/60)}h${a%60}m`;
+}
+
+// ============================================================
+// CALCULATED FIELDS
+// ============================================================
+function calcBPStatus(){
+  const sys=+V('f_systolic'),dia=+V('f_diastolic');
+  if(!sys||!dia)return;
+  let s='';
+  if(sys<90||dia<60)s='Low';
+  else if(sys<120&&dia<80)s='Normal';
+  else if(sys<130&&dia<80)s='Elevated';
+  else if(sys<140||dia<90)s='High Stage 1';
+  else if(sys<180||dia<120)s='High Stage 2';
+  else s='Hypertensive Crisis';
+  S('f_status',s);
+}
+function calcGlucoseStatus(){
+  const g=+V('f_glucose'); if(!g)return;
+  let s=''; if(g<70)s='Low'; else if(g<=99)s='Normal'; else if(g<=125)s='Pre-Diabetic'; else s='High';
+  S('f_status',s);
+}
+function calcMeltDuration(){
+  const s=V('f_melt_start'),e=V('f_melt_end'); if(!s||!e)return;
+  const diff=timeToMin(e)-timeToMin(s);
+  if(diff>0)S('f_melt_dur',Math.floor(diff/60)+'h '+diff%60+'m');
+}
+function calcDevDuration(){
+  const s=V('f_start_time'),e=V('f_end_time'); if(!s||!e)return;
+  const diff=timeToMin(e)-timeToMin(s);
+  if(diff>0)S('f_duration',Math.floor(diff/60)+'h '+diff%60+'m');
+}
+function calcSleepDuration(){
+  const s=V('f_sleep_time'),w=V('f_wake_time'); if(!s||!w)return;
+  let diff=timeToMin(w)-timeToMin(s); if(diff<0)diff+=24*60;
+  S('f_duration',Math.floor(diff/60)+'h '+diff%60+'m');
+}
+function calcTravelDuration(){
+  const s=V('f_start_time'),a=V('f_arrival_time'); if(!s||!a)return;
+  const diff=timeToMin(a)-timeToMin(s);
+  if(diff>0)S('f_duration',Math.floor(diff/60)+'h '+diff%60+'m');
+}
+function calcSteps(){
+  const w=+V('f_watch'),r=+V('f_ring');
+  if(w&&r)S('f_steps',Math.round((w+r)/2));
+  else if(w)S('f_steps',w);
+  else if(r)S('f_steps',r);
+}
+function timeToMin(t){ if(!t)return 0; const[h,m]=t.split(':'); return +h*60+(+m); }
 
 // ============================================================
 // LOG DEFINITIONS
 // ============================================================
-const LOGS=[
-  {key:'bathroom',icon:'🚽',label:'Bathroom',color:'#3d8ef0',
-   fields:()=>`
-    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
-    <div class="form-group"><label>Usage Type</label><select id="f_usage_type"><option>Bowel Movement</option><option>Urinated</option></select></div>
-    <div class="form-group"><label>Urgency Level</label><select id="f_urgency"><option>None</option><option>Mild</option><option>Moderate</option><option>Major</option><option>Severe</option><option>Urgent</option></select></div>
-    <div class="form-group"><label>Discomfort Level</label><select id="f_discomfort"><option>None</option><option>Mild</option><option>Moderate</option><option>Major</option><option>Severe</option><option>Extreme</option></select></div>
-    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
-    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
-   collect:()=>({date:V('f_date'),time:V('f_time'),usage_type:V('f_usage_type'),urgency:V('f_urgency'),discomfort:V('f_discomfort'),comments:V('f_comments'),location:V('f_location')}),
-   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_usage_type',e.usage_type);S('f_urgency',e.urgency);S('f_discomfort',e.discomfort);S('f_comments',e.comments);S('f_location',e.location);},
-   cols:['date','time','usage_type','urgency','discomfort','comments'],
-   stats:(d)=>[{lbl:'Total',val:d.length,c:'#3d8ef0'},{lbl:'Bowel',val:d.filter(x=>x.usage_type==='Bowel Movement').length,c:'#ff7043'},{lbl:'Urinated',val:d.filter(x=>x.usage_type==='Urinated').length,c:'#4caf50'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#9b6dff'}]
-  },
-  {key:'beverage',icon:'🥤',label:'Beverage',color:'#00c9a7',
-   fields:()=>`
-    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
-    <div class="form-group"><label>Beverage Type</label><select id="f_bev_type"><option>Water</option><option>Coffee</option><option>Tea</option><option>Soda</option><option>Energy Drink</option><option>Frozen Beverage</option><option>Alcoholic Beverage</option><option>Juice</option><option>Dairy</option></select></div>
-    <div class="form-group"><label>Beverage Brand</label><select id="f_brand" onchange="toggleOther(this,'f_brand_other')"><option>Tap Water</option><option>Mountain Dew</option><option>Folgers</option><option>Maxwell House</option><option>Great Value</option><option>Signature</option><option>Hood</option><option>Pepsi</option><option>Coca-Cola</option><option>Monster</option><option>Red Bull</option><option>Bud Light</option><option>Other</option></select><input type="text" id="f_brand_other" placeholder="Specify brand" style="margin-top:6px;display:none"></div>
-    <div class="form-group"><label>Beverage Size</label><select id="f_size" onchange="toggleOther(this,'f_size_other')"><option>2 oz.</option><option>4 oz.</option><option>6 oz.</option><option>8 oz.</option><option>10 oz.</option><option>12 oz.</option><option>14 oz.</option><option>15.5 oz.</option><option>16 oz.</option><option>16.9 oz.</option><option>18 oz.</option><option>20 oz.</option><option>Other</option></select><input type="text" id="f_size_other" placeholder="Specify size" style="margin-top:6px;display:none"></div>
-    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
-    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
-   collect:()=>({date:V('f_date'),time:V('f_time'),bev_type:V('f_bev_type'),brand:V('f_brand')==='Other'?V('f_brand_other'):V('f_brand'),size:V('f_size')==='Other'?V('f_size_other'):V('f_size'),comments:V('f_comments'),location:V('f_location')}),
-   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_bev_type',e.bev_type);S('f_brand',e.brand);S('f_size',e.size);S('f_comments',e.comments);S('f_location',e.location);},
-   cols:['date','time','bev_type','brand','size'],
-   stats:(d)=>[{lbl:'Total',val:d.length,c:'#00c9a7'},{lbl:'Water',val:d.filter(x=>x.bev_type==='Water').length,c:'#3d8ef0'},{lbl:'Coffee',val:d.filter(x=>x.bev_type==='Coffee').length,c:'#ff7043'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#9b6dff'}]
-  },
+const LOGS = [
   {key:'bp',icon:'❤️',label:'Blood Pressure',color:'#f44336',
    fields:()=>`
     <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
     <div class="form-group"><label>Name</label><select id="f_name" onchange="toggleOther(this,'f_name_other')"><option>Chris</option><option>Crystal</option><option>Tammi</option><option>Marrian</option><option>Other</option></select><input type="text" id="f_name_other" placeholder="Specify name" style="margin-top:6px;display:none"></div>
-    <div class="form-row"><div class="form-group"><label>Systolic</label><input type="number" id="f_systolic" placeholder="120" oninput="calcBPStatus()"></div><div class="form-group"><label>Diastolic</label><input type="number" id="f_diastolic" placeholder="80" oninput="calcBPStatus()"></div></div>
-    <div class="form-group"><label>Activity</label><select id="f_activity"><option>Resting</option><option>Normal motion</option><option>Vigorous motion</option></select></div>
-    <div class="form-group"><label>Status</label><input type="text" id="f_status" readonly placeholder="Auto-calculated"></div>
+    <div class="form-row"><div class="form-group"><label>Systolic (mmHg)</label><input type="number" id="f_systolic" oninput="calcBPStatus()"></div><div class="form-group"><label>Diastolic (mmHg)</label><input type="number" id="f_diastolic" oninput="calcBPStatus()"></div></div>
+    <div class="form-row"><div class="form-group"><label>Pulse (BPM)</label><input type="number" id="f_pulse"></div><div class="form-group"><label>Status</label><input type="text" id="f_status" readonly placeholder="Auto-calculated"></div></div>
+    <div class="form-row"><div class="form-group"><label>Arm</label><select id="f_arm"><option>Left</option><option>Right</option></select></div><div class="form-group"><label>Position</label><select id="f_position"><option>Sitting</option><option>Standing</option><option>Lying Down</option></select></div></div>
     <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
     <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
-   collect:()=>({date:V('f_date'),time:V('f_time'),name:V('f_name')==='Other'?V('f_name_other'):V('f_name'),systolic:V('f_systolic'),diastolic:V('f_diastolic'),activity:V('f_activity'),status:V('f_status'),comments:V('f_comments'),location:V('f_location')}),
-   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_name',e.name);S('f_systolic',e.systolic);S('f_diastolic',e.diastolic);S('f_activity',e.activity);S('f_status',e.status);S('f_comments',e.comments);S('f_location',e.location);},
-   cols:['date','time','name','systolic','diastolic','status'],
+   collect:()=>({date:V('f_date'),time:V('f_time'),name:V('f_name')==='Other'?V('f_name_other'):V('f_name'),systolic:V('f_systolic'),diastolic:V('f_diastolic'),pulse:V('f_pulse'),status:V('f_status'),arm:V('f_arm'),position:V('f_position'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_name',e.name);S('f_systolic',e.systolic);S('f_diastolic',e.diastolic);S('f_pulse',e.pulse);S('f_status',e.status);S('f_arm',e.arm);S('f_position',e.position);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','name','systolic','diastolic','pulse','status'],
    stats:(d)=>{
-    const avg=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):0;
-    return [{lbl:'Total',val:d.length,c:'#f44336'},{lbl:'Avg Sys',val:avg(d.map(x=>+x.systolic)),c:'#ff7043'},{lbl:'Avg Dia',val:avg(d.map(x=>+x.diastolic)),c:'#ffc107'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#9b6dff'}];
+    const avg_s=d.length?Math.round(d.reduce((a,b)=>a+(+b.systolic),0)/d.length):0;
+    const avg_d=d.length?Math.round(d.reduce((a,b)=>a+(+b.diastolic),0)/d.length):0;
+    return [{lbl:'Total',val:d.length,c:'#f44336'},{lbl:'Avg Sys',val:avg_s,c:'#ff7043'},{lbl:'Avg Dia',val:avg_d,c:'#ffc107'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#3d8ef0'}];
    }
   },
   {key:'cigarette',icon:'🚬',label:'Cigarette',color:'#795548',
    fields:()=>`
     <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
-    <div class="form-group"><label>Brand</label><select id="f_brand" onchange="toggleOther(this,'f_brand_other')"><option>Indian Reservation</option><option>Basic</option><option>Montego</option><option>Lucky Strike</option><option>Camel</option><option>Marlboro</option><option>Other</option></select><input type="text" id="f_brand_other" placeholder="Specify brand" style="margin-top:6px;display:none"></div>
+    <div class="form-group"><label>Brand</label><select id="f_brand" onchange="toggleOther(this,'f_brand_other')"><option>Indian Resevation</option><option>Marlboro</option><option>Camel</option><option>Lucky Strike</option><option>Montego</option><option>Other</option></select><input type="text" id="f_brand_other" placeholder="Specify brand" style="margin-top:6px;display:none"></div>
     <div class="form-group"><label>Type</label><select id="f_type"><option>Full Flavor</option><option>Regular</option><option>Light</option><option>Ultra-Light</option><option>Menthol</option><option>Menthol Light</option></select></div>
     <div class="form-group"><label>Size</label><select id="f_size"><option>Regular</option><option>100s</option><option>Slim</option></select></div>
     <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
@@ -454,7 +738,7 @@ const LOGS=[
     <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
     <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
    collect:()=>({date:V('f_date'),start_time:V('f_start_time'),ex_type:V('f_ex_type'),exercise:V('f_exercise'),sets:V('f_sets'),reps:V('f_reps'),details:V('f_details'),end_time:V('f_end_time'),rating:getStarVal('f_rating'),comments:V('f_comments'),location:V('f_location')}),
-   fill:(e)=>{S('f_date',e.date);S('f_start_time',e.start_time);S('f_ex_type',e.ex_type);S('f_exercise',e.exercise);S('f_sets',e.sets);S('f_reps',e.reps);S('f_details',e.details);S('f_end_time',e.end_time);S('f_comments',e.comments);S('f_location',e.location);},
+   fill:(e)=>{S('f_date',e.date);S('f_start_time',e.start_time);S('f_ex_type',e.ex_type);S('f_exercise',e.exercise);S('f_sets',e.sets);S('f_reps',e.reps);S('f_details',e.details);S('f_end_time',e.end_time);setStarVal('f_rating',e.rating);S('f_comments',e.comments);S('f_location',e.location);},
    cols:['date','ex_type','exercise','sets','reps','rating'],
    stats:(d)=>[{lbl:'Total',val:d.length,c:'#e91e8c'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#3d8ef0'},{lbl:'Types',val:new Set(d.map(x=>x.ex_type)).size,c:'#ffc107'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#4caf50'}]
   },
@@ -468,7 +752,7 @@ const LOGS=[
     <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
     <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
    collect:()=>({date:V('f_date'),time:V('f_time'),meal:V('f_meal'),prepared_by:V('f_prepared_by'),main_dish:V('f_main_dish'),sides:V('f_sides'),rating:getStarVal('f_rating'),comments:V('f_comments'),location:V('f_location')}),
-   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_meal',e.meal);S('f_prepared_by',e.prepared_by);S('f_main_dish',e.main_dish);S('f_sides',e.sides);S('f_comments',e.comments);S('f_location',e.location);},
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_meal',e.meal);S('f_prepared_by',e.prepared_by);S('f_main_dish',e.main_dish);S('f_sides',e.sides);setStarVal('f_rating',e.rating);S('f_comments',e.comments);S('f_location',e.location);},
    cols:['date','time','meal','prepared_by','main_dish','rating'],
    stats:(d)=>[{lbl:'Total',val:d.length,c:'#ff7043'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#3d8ef0'},{lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#4caf50'},{lbl:'Avg Rating',val:avgRating(d),c:'#ffc107'}]
   },
@@ -503,7 +787,7 @@ const LOGS=[
   {key:'medication',icon:'💊',label:'Medication',color:'#ab47bc',
    fields:()=>`
     <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
-    <div class="form-group"><label>Medication</label><select id="f_medication" onchange="toggleOther(this,'f_med_other')"><option>Buprenorphine</option><option>Acetaminophen</option><option>Ibuprofen</option><option>Asperin</option><option>Cyclobenzaprine</option><option>Amitryptoline</option><option>Cocaine</option><option>Other</option></select><input type="text" id="f_med_other" placeholder="Specify medication" style="margin-top:6px;display:none"></div>
+    <div class="form-group"><label>Medication</label><select id="f_medication" onchange="toggleOther(this,'f_med_other')"><option>Buprenorphine</option><option>Acetaminophen</option><option>Ibuprofen</option><option>Asperin</option><option>Cyclobenzaprine</option><option>Amitryptoline</option><option>Other</option></select><input type="text" id="f_med_other" placeholder="Specify medication" style="margin-top:6px;display:none"></div>
     <div class="form-group"><label>Dosage</label><select id="f_dosage" onchange="toggleOther(this,'f_dosage_other')"><option>2mg.</option><option>4mg.</option><option>6mg.</option><option>10mg.</option><option>20mg.</option><option>30mg.</option><option>50mg.</option><option>100mg.</option><option>200mg.</option><option>400mg.</option><option>600mg.</option><option>800mg.</option><option>1000mg.</option><option>1500mg.</option><option>2000mg.</option><option>8mg./2mg.</option><option>16mg./4mg.</option><option>24mg./6mg.</option><option>32mg./8mg.</option><option>Other</option></select><input type="text" id="f_dosage_other" placeholder="Specify dosage" style="margin-top:6px;display:none"></div>
     <div class="form-row"><div class="form-group"><label>Melt Start Time</label><input type="time" id="f_melt_start" oninput="calcMeltDuration()"></div><div class="form-group"><label>Melt End Time</label><input type="time" id="f_melt_end" oninput="calcMeltDuration()"></div></div>
     <div class="form-group"><label>Melt Duration</label><input type="text" id="f_melt_dur" readonly placeholder="Auto-calculated"></div>
@@ -525,7 +809,7 @@ const LOGS=[
     <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
     <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
    collect:()=>({date:V('f_date'),partner:V('f_partner'),partner_name:V('f_partner_name'),activities:V('f_activities'),protection:V('f_protection'),toys:V('f_toys'),duration:V('f_duration'),rating:getStarVal('f_rating'),comments:V('f_comments'),location:V('f_location')}),
-   fill:(e)=>{S('f_date',e.date);S('f_partner',e.partner);S('f_partner_name',e.partner_name);S('f_activities',e.activities);S('f_protection',e.protection);S('f_toys',e.toys);S('f_duration',e.duration);S('f_comments',e.comments);S('f_location',e.location);},
+   fill:(e)=>{S('f_date',e.date);S('f_partner',e.partner);S('f_partner_name',e.partner_name);S('f_activities',e.activities);S('f_protection',e.protection);S('f_toys',e.toys);S('f_duration',e.duration);setStarVal('f_rating',e.rating);S('f_comments',e.comments);S('f_location',e.location);},
    cols:['date','partner','partner_name','duration','rating'],
    stats:(d)=>[{lbl:'Total',val:d.length,c:'#ff4081'},{lbl:'With Partner',val:d.filter(x=>x.partner==='Yes').length,c:'#e91e8c'},{lbl:'This Month',val:d.filter(x=>isThisMonth(x.date)).length,c:'#9b6dff'},{lbl:'Avg Rating',val:avgRating(d),c:'#ffc107'}]
   },
@@ -627,7 +911,7 @@ const LOGS=[
     <div class="form-row"><div class="form-group"><label>Date Purchased</label><input type="date" id="f_pur_date" value="${today()}"></div><div class="form-group"><label>Price ($)</label><input type="number" id="f_price" step="0.01"></div></div>
     <div class="form-group"><label>Dispensary</label><select id="f_dispensary" onchange="toggleOther(this,'f_disp_other')"><option>The Magic Mushroom</option><option>Rollin' Twenties</option><option>Other</option></select><input type="text" id="f_disp_other" placeholder="Specify dispensary" style="margin-top:6px;display:none"></div>`,
    collect:()=>({brand:V('f_brand'),strain:V('f_strain'),size:V('f_size'),strength:V('f_strength'),prod_date:V('f_prod_date'),best_by:V('f_best_by'),rating:getStarVal('f_rating'),comments:V('f_comments'),pur_date:V('f_pur_date'),price:V('f_price'),dispensary:V('f_dispensary')==='Other'?V('f_disp_other'):V('f_dispensary')}),
-   fill:(e)=>{S('f_brand',e.brand);S('f_strain',e.strain);S('f_size',e.size);S('f_strength',e.strength);S('f_prod_date',e.prod_date);S('f_best_by',e.best_by);S('f_pur_date',e.pur_date);S('f_price',e.price);S('f_dispensary',e.dispensary);S('f_comments',e.comments);},
+   fill:(e)=>{S('f_brand',e.brand);S('f_strain',e.strain);S('f_size',e.size);S('f_strength',e.strength);S('f_prod_date',e.prod_date);S('f_best_by',e.best_by);setStarVal('f_rating',e.rating);S('f_pur_date',e.pur_date);S('f_price',e.price);S('f_dispensary',e.dispensary);S('f_comments',e.comments);},
    cols:['pur_date','brand','strain','size','price','rating'],
    stats:(d)=>{
     const tot=d.reduce((a,b)=>a+(+b.price||0),0).toFixed(2);
@@ -645,217 +929,137 @@ const LOGS=[
    fill:(e)=>{S('f_household',e.household);S('f_chore',e.chore);S('f_assigned_to',e.assigned_to);S('f_assigned_date',e.assigned_date);S('f_due_date',e.due_date);if(document.getElementById('f_completed'))document.getElementById('f_completed').checked=e.completed==='Yes';S('f_comments',e.comments);S('f_location',e.location);},
    cols:['assigned_date','household','chore','assigned_to','due_date','completed'],
    stats:(d)=>[{lbl:'Total',val:d.length,c:'#ffca28'},{lbl:'Completed',val:d.filter(x=>x.completed==='Yes').length,c:'#4caf50'},{lbl:'Pending',val:d.filter(x=>x.completed!=='Yes').length,c:'#ff7043'},{lbl:'Overdue',val:d.filter(x=>x.completed!=='Yes'&&x.due_date&&x.due_date<today()).length,c:'#f44336'}]
+  },
+  {key:'bathroom',icon:'🚽',label:'Bathroom',color:'#29b6f6',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Usage Type</label><select id="f_usage_type"><option>Urinated</option><option>Bowel Movement</option></select></div>
+    <div class="form-group"><label>Urge to Go</label><select id="f_urge_level"><option>Minor</option><option>Moderate</option><option>Major</option><option>Severe</option><option>Urgent</option></select></div>
+    <div class="form-group"><label>Discomfort Level</label><select id="f_discomfort_level"><option>None</option><option>Minor</option><option>Moderate</option><option>Major</option><option>Severe</option><option>Extreme</option></select></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),usage_type:V('f_usage_type'),urge_level:V('f_urge_level'),discomfort_level:V('f_discomfort_level'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_usage_type',e.usage_type);S('f_urge_level',e.urge_level);S('f_discomfort_level',e.discomfort_level);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','usage_type','urge_level','discomfort_level'],
+   stats:(d)=>{
+    const urinated=d.filter(x=>x.usage_type==='Urinated').length;
+    const bowel=d.filter(x=>x.usage_type==='Bowel Movement').length;
+    const highDiscomfort=d.filter(x=>['Major','Severe','Extreme'].includes(x.discomfort_level)).length;
+    const urgentUrge=d.filter(x=>['Severe','Urgent'].includes(x.urge_level)).length;
+    return [{lbl:'Total',val:d.length,c:'#29b6f6'},{lbl:'Urinated',val:urinated,c:'#4fc3f7'},{lbl:'Bowel Movements',val:bowel,c:'#0288d1'},{lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#4caf50'},{lbl:'High Discomfort',val:highDiscomfort,c:'#ff7043'},{lbl:'Urgent Urge',val:urgentUrge,c:'#f44336'}];
+   }
+  },
+  {key:'beverage',icon:'🥤',label:'Beverage',color:'#00acc1',
+   fields:()=>`
+    <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="f_date" value="${today()}"></div><div class="form-group"><label>Time</label><input type="time" id="f_time" value="${nowTime()}"></div></div>
+    <div class="form-group"><label>Beverage Type</label><select id="f_beverage_type"><option>Water</option><option>Coffee</option><option>Soda</option><option>Tea</option><option>Energy Drink</option><option>Dairy</option><option>Juice</option><option>Frozen Beverage</option><option>Alcohol</option></select></div>
+    <div class="form-group"><label>Brand</label><select id="f_brand" onchange="toggleOther(this,'f_brand_other')"><option>Mountain Dew</option><option>Pepsi</option><option>Coca-Cola</option><option>Great Value</option><option>Signature Select</option><option>Folgers</option><option>Maxwell House</option><option>Bud Light</option><option>Budweiser</option><option>Other</option></select><input type="text" id="f_brand_other" placeholder="Specify brand" style="margin-top:6px;display:none"></div>
+    <div class="form-group"><label>Size</label><select id="f_size"><option>4 oz.</option><option>6 oz.</option><option>8 oz.</option><option>10 oz.</option><option>12 oz.</option><option>16 oz.</option><option>20 oz.</option><option>24 oz.</option><option>32 oz.</option><option>40 oz.</option><option>64 oz. (Half Gallon)</option><option>128 oz. (Gallon)</option><option>Shot (1.5 oz.)</option><option>Can (12 oz.)</option><option>Bottle (16.9 oz.)</option><option>Bottle (20 oz.)</option><option>Liter (33.8 oz.)</option><option>2-Liter (67.6 oz.)</option><option>Tall Boy (16 oz.)</option><option>Pint (16 oz.)</option><option>Cup (8 oz.)</option><option>Mug (12 oz.)</option><option>Travel Mug (16 oz.)</option><option>Travel Mug (20 oz.)</option></select></div>
+    <div class="form-group"><label>Comments</label><textarea id="f_comments"></textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" id="f_location" placeholder="Address"></div>`,
+   collect:()=>({date:V('f_date'),time:V('f_time'),beverage_type:V('f_beverage_type'),brand:V('f_brand')==='Other'?V('f_brand_other'):V('f_brand'),size:V('f_size'),comments:V('f_comments'),location:V('f_location')}),
+   fill:(e)=>{S('f_date',e.date);S('f_time',e.time);S('f_beverage_type',e.beverage_type);S('f_brand',e.brand);S('f_size',e.size);S('f_comments',e.comments);S('f_location',e.location);},
+   cols:['date','time','beverage_type','brand','size'],
+   stats:(d)=>{
+    const typeCount=d.reduce((a,b)=>{a[b.beverage_type]=(a[b.beverage_type]||0)+1;return a;},{});
+    const topType=Object.entries(typeCount).sort((a,b)=>b[1]-a[1])[0];
+    return [
+      {lbl:'Total',val:d.length,c:'#00acc1'},
+      {lbl:'Today',val:d.filter(x=>x.date===today()).length,c:'#4caf50'},
+      {lbl:'This Week',val:d.filter(x=>isThisWeek(x.date)).length,c:'#3d8ef0'},
+      {lbl:'This Month',val:d.filter(x=>isThisMonth(x.date)).length,c:'#9b6dff'},
+      {lbl:'Fav Type',val:topType?topType[0]:'-',c:'#ffc107'},
+      {lbl:'Types Logged',val:Object.keys(typeCount).length,c:'#ff7043'}
+    ];
+   }
   }
 ];
 
 // ============================================================
-// HELPER CALCS
+// STATE
 // ============================================================
-function isThisWeek(d){if(!d)return false;const now=new Date();const dt=new Date(d+'T12:00:00');const wk=7*24*60*60*1000;return (now-dt)<wk&&dt<=now;}
-function isThisMonth(d){if(!d)return false;const now=new Date();const dt=new Date(d+'T12:00:00');return dt.getMonth()===now.getMonth()&&dt.getFullYear()===now.getFullYear();}
-function avgPerDay(d){
-  if(!d.length)return 0;
-  const dates=[...new Set(d.map(x=>x.date))].length;
-  return Math.round(d.length/dates*10)/10;
-}
-function avgRating(d){
-  const rated=d.filter(x=>+x.rating>0);
-  if(!rated.length)return 0;
-  return (rated.reduce((a,b)=>a+(+b.rating),0)/rated.length).toFixed(1)+'★';
-}
-function avgDuration(d,key){
-  // parse "Xh Ym" format
-  const parsed=d.map(x=>{
-    const m=x[key]?.match(/(\d+)h\s*(\d+)m/);
-    return m?(+m[1]*60+(+m[2])):0;
-  }).filter(x=>x>0);
-  if(!parsed.length)return '-';
-  const avg=Math.round(parsed.reduce((a,b)=>a+b,0)/parsed.length);
-  return `${Math.floor(avg/60)}h${avg%60}m`;
-}
-
-function V(id){const el=document.getElementById(id);return el?el.value:'';}
-function S(id,val){const el=document.getElementById(id);if(el&&val!==undefined)el.value=val;}
-
-function toggleOther(sel,otherId){
-  const other=document.getElementById(otherId);
-  if(other)other.style.display=sel.value==='Other'?'block':'none';
-}
-
-// Calculated fields
-function calcBPStatus(){
-  const sys=+V('f_systolic'),dia=+V('f_diastolic');
-  if(!sys||!dia)return;
-  let status='';
-  if(sys<90||dia<60)status='Low';
-  else if(sys<120&&dia<80)status='Normal';
-  else if(sys<130&&dia<80)status='Elevated';
-  else if(sys<140||dia<90)status='High Stage 1';
-  else if(sys<180||dia<120)status='High Stage 2';
-  else status='Hypertensive Crisis';
-  S('f_status',status);
-}
-function calcGlucoseStatus(){
-  const g=+V('f_glucose');
-  if(!g)return;
-  let status='';
-  const ctx=V('f_context');
-  if(ctx==='Fasting'){status=g<70?'Low':g<100?'Normal':g<126?'Pre-diabetic':'Diabetic';}
-  else if(ctx==='After Meal'){status=g<140?'Normal':g<200?'Pre-diabetic':'High';}
-  else{status=g<100?'Normal':g<140?'Elevated':'High';}
-  S('f_status',status);
-}
-function calcSleepDuration(){S('f_duration',calcDuration(V('f_sleep_time'),V('f_wake_time')));}
-function calcDevDuration(){S('f_duration',calcDuration(V('f_start_time'),V('f_end_time')));}
-function calcMeltDuration(){S('f_melt_dur',calcDuration(V('f_melt_start'),V('f_melt_end')));}
-function calcTravelDuration(){S('f_duration',calcDuration(V('f_start_time'),V('f_arrival_time')));}
-function calcSteps(){
-  const w=+V('f_watch'),r=+V('f_ring');
-  if(w&&r)S('f_steps',Math.round((w+r)/2));
-  else if(w)S('f_steps',w);
-  else if(r)S('f_steps',r);
-}
+let currentLog = null;
+let editingId = null;
+let allCounts = {};
+let allData = {};
 
 // ============================================================
-// CURRENT LOG STATE
+// MAIN DASHBOARD
 // ============================================================
-let currentLogDef=null;
-let editingId=null;
-
-const currentLog={
-  openAddEntry(){
-    editingId=null;
-    document.getElementById('modal-entry-title').textContent='Add Entry — '+currentLogDef.label;
-    document.getElementById('modal-entry-body').innerHTML=currentLogDef.fields();
-    document.getElementById('modal-entry-save').textContent='Save Entry';
-    openModal('modal-entry');
-  },
-  openHistory(){
-    renderHistoryTable();
-    openModal('modal-history');
-  },
-  saveEntry(){
-    const entry=currentLogDef.collect();
-    if(editingId){
-      DB.update(currentLogDef.key,editingId,entry);
-      notify('Entry updated!');
-    } else {
-      DB.add(currentLogDef.key,entry);
-      notify('Entry saved!');
-    }
-    closeModal('modal-entry');
-    renderSubDash(currentLogDef);
+async function renderMainDash() {
+  // Load counts from DB
+  try {
+    allCounts = await apiCall({api:'counts'});
+  } catch(e) {
+    allCounts = {};
   }
-};
 
-function renderHistoryTable(){
-  const data=DB.get(currentLogDef.key);
-  const cols=currentLogDef.cols;
-  document.getElementById('modal-history-title').textContent=currentLogDef.label+' History ('+data.length+' entries)';
-  let html='';
-  if(!data.length){
-    html='<div class="empty-state">No entries yet. Add your first entry!</div>';
-  } else {
-    html=`<div class="table-wrap"><table class="data-table"><thead><tr>${cols.map(c=>`<th>${c.replace(/_/g,' ')}</th>`).join('')}<th>Actions</th></tr></thead><tbody>`;
-    html+=data.slice().reverse().map(row=>{
-      const safeId=row.id;
-      return `<tr data-rowid="${safeId}">${cols.map(c=>`<td>${(row[c]||'').toString().replace(/</g,'&lt;')}</td>`).join('')}<td class="act-btns">
-        <button class="btn btn-ghost btn-sm" data-action="edit" data-rowid="${safeId}">✏️ Edit</button>
-        <button class="btn btn-red btn-sm" data-action="del" data-rowid="${safeId}">🗑️ Delete</button>
-      </td></tr>`;
-    }).join('');
-    html+='</tbody></table></div>';
-  }
-  document.getElementById('modal-history-body').innerHTML=html;
-}
+  const totalEntries = Object.values(allCounts).reduce((a,b)=>a+b,0);
+  const activeLogs = Object.values(allCounts).filter(c=>c>0).length;
 
-function historyClickHandler(e){
-  const btn=e.target.closest('button[data-action]');
-  if(!btn)return;
-  const action=btn.dataset.action;
-  const id=btn.dataset.rowid;
-  if(action==='edit'){ editEntry(id); }
-  else if(action==='del'){ deleteEntry(id); }
-}
+  document.getElementById('main-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${LOGS.length}</div><div class="stat-lbl">Log Types</div></div>
+    <div class="stat-card"><div class="stat-val">${totalEntries.toLocaleString()}</div><div class="stat-lbl">Total Entries</div></div>
+    <div class="stat-card"><div class="stat-val">${activeLogs}</div><div class="stat-lbl">Active Logs</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent-teal)">MySQL</div><div class="stat-lbl">Database</div></div>`;
 
-// Wire up the history modal listener ONCE at startup
-document.getElementById('modal-history').addEventListener('click', historyClickHandler);
-
-function editEntry(id){
-  const data=DB.get(currentLogDef.key);
-  const entry=data.find(x=>x.id===id);
-  if(!entry)return;
-  editingId=id;
-  document.getElementById('modal-entry-title').textContent='Edit Entry — '+currentLogDef.label;
-  document.getElementById('modal-entry-body').innerHTML=currentLogDef.fields();
-  currentLogDef.fill(entry);
-  document.getElementById('modal-entry-save').textContent='Update Entry';
-  closeModal('modal-history');
-  openModal('modal-entry');
-}
-
-function deleteEntry(id){
-  DB.delete(currentLogDef.key,id);
-  notify('Entry deleted.');
-  renderHistoryTable();
-  renderSubDash(currentLogDef);
-}
-
-// ============================================================
-// RENDER MAIN DASHBOARD
-// ============================================================
-function renderMainDash(){
-  const totalEntries=LOGS.reduce((a,l)=>a+DB.count(l.key),0);
-  document.getElementById('main-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-val">${LOGS.length}</div><div class="stat-lbl">Active Logs</div></div>
-    <div class="stat-card"><div class="stat-val">${totalEntries}</div><div class="stat-lbl">Total Entries</div></div>
-    <div class="stat-card"><div class="stat-val">${LOGS.reduce((a,l)=>a+DB.get(l.key).filter(x=>x.date===today()||x.pu_date===today()||x.pur_date===today()).length,0)}</div><div class="stat-lbl">Today's Entries</div></div>
-    <div class="stat-card"><div class="stat-val">${LOGS.filter(l=>DB.count(l.key)>0).length}</div><div class="stat-lbl">Logs In Use</div></div>`;
-
-  document.getElementById('log-grid').innerHTML=LOGS.map(l=>`
-    <div class="log-btn" onclick="openSubDash('${l.key}')" style="border-top:3px solid ${l.color}">
+  document.getElementById('log-grid').innerHTML = LOGS.map(l => `
+    <div class="log-btn" onclick="openLog('${l.key}')" style="border-top:3px solid ${l.color}">
       <div class="log-icon">${l.icon}</div>
       <div class="log-label">${l.label}</div>
-      <div class="log-count">${DB.count(l.key)} entries</div>
+      <div class="log-count">${(allCounts[l.key]||0).toLocaleString()} entries</div>
     </div>`).join('');
 }
 
 // ============================================================
-// RENDER SUB DASHBOARD
+// SUB-DASHBOARD
 // ============================================================
-function openSubDash(key){
-  currentLogDef=LOGS.find(l=>l.key===key);
-  renderSubDash(currentLogDef);
+async function openLog(key) {
+  const log = LOGS.find(l=>l.key===key);
+  if (!log) return;
+  currentLog = {
+    ...log,
+    openAddEntry: () => openEntryModal(log, null),
+    refresh: () => openLog(key)
+  };
+
+  document.getElementById('sub-topbar-title').textContent = log.label;
+  document.getElementById('sub-icon').textContent = log.icon;
+  document.getElementById('sub-title').textContent = log.label;
+  document.getElementById('sub-desc').textContent = 'Loading...';
+
   showScreen('screen-sub');
+
+  try {
+    const data = await apiCall({api:'list', log:key});
+    allData[key] = data;
+    renderSubDash(log, data);
+  } catch(e) {
+    document.getElementById('sub-desc').textContent = 'Error loading data.';
+    notify('Failed to load data', true);
+  }
 }
 
-function renderSubDash(log){
-  document.getElementById('sub-topbar-title').textContent=log.label+' Log';
-  document.getElementById('sub-icon').textContent=log.icon;
-  document.getElementById('sub-title').textContent=log.label+' Log';
-  document.getElementById('sub-desc').textContent='Track and manage your '+log.label.toLowerCase()+' entries';
+function renderSubDash(log, data) {
+  document.getElementById('sub-desc').textContent = data.length + ' entries';
 
-  const data=DB.get(log.key);
-  const stats=log.stats(data);
-  document.getElementById('sub-stats').innerHTML=stats.map(s=>`
-    <div class="sub-stat">
-      <div class="sv" style="color:${s.c}">${s.val}</div>
-      <div class="sl">${s.lbl}</div>
-    </div>`).join('');
+  // Stats
+  const stats = log.stats(data);
+  document.getElementById('sub-stats-row').innerHTML = stats.map(s =>
+    `<div class="sub-stat"><div class="sv" style="color:${s.c}">${s.val}</div><div class="sl">${s.lbl}</div></div>`
+  ).join('');
 
-  // Mini bar chart - last 7 days
-  const last7=[];
+  // Chart - last 7 days
+  const dateField = log.cols.find(c=>c==='date'||c==='pu_date'||c==='assigned_date'||c==='pur_date') || 'date';
+  const last7 = [];
   for(let i=6;i>=0;i--){
-    const d=new Date();d.setDate(d.getDate()-i);
-    const ds=d.toISOString().split('T')[0];
-    const dateFields=['date','pu_date','pur_date','assigned_date'];
-    const cnt=data.filter(x=>dateFields.some(f=>x[f]===ds)).length;
-    last7.push({label:d.toLocaleDateString('en',{weekday:'short'}),cnt});
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    last7.push({label:d.toLocaleDateString('en',{weekday:'short'}),cnt:data.filter(x=>x[dateField]===ds).length});
   }
   const max=Math.max(...last7.map(x=>x.cnt),1);
-  document.getElementById('sub-chart').innerHTML=`
-    <div style="display:flex;flex-direction:column;width:100%;gap:0;">
-      <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px;font-family:Rajdhani,sans-serif;text-transform:uppercase;">Last 7 Days</div>
+  document.getElementById('sub-chart').innerHTML = `
+    <div class="chart-area" style="align-items:flex-end">
       <div style="display:flex;align-items:flex-end;gap:6px;flex:1;width:100%;">
         ${last7.map(x=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;">
           <div style="flex:1;width:100%;display:flex;align-items:flex-end;">
@@ -866,136 +1070,168 @@ function renderSubDash(log){
         </div>`).join('')}
       </div>
     </div>`;
+
+  // Table
+  const cols = log.cols;
+  document.getElementById('sub-thead').innerHTML = `<tr>${cols.map(c=>`<th>${c.replace(/_/g,' ')}</th>`).join('')}<th>Actions</th></tr>`;
+
+  if (!data.length) {
+    document.getElementById('sub-tbody').innerHTML = `<tr><td colspan="${cols.length+1}" class="empty-state">No entries yet. Click ➕ Add Entry to get started.</td></tr>`;
+    return;
+  }
+
+  document.getElementById('sub-tbody').innerHTML = data.map(row => `
+    <tr>
+      ${cols.map(c=>`<td>${row[c]??''}</td>`).join('')}
+      <td><div class="act-btns">
+        <button class="btn btn-primary btn-sm btn-icon" onclick="editEntry('${log.key}',${row.id})">✏️</button>
+        <button class="btn btn-red btn-sm btn-icon" onclick="deleteEntry('${log.key}',${row.id})">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+// ============================================================
+// ENTRY MODAL
+// ============================================================
+function openEntryModal(log, entry) {
+  editingId = entry ? entry.id : null;
+  document.getElementById('modal-entry-title').textContent = entry ? '✏️ Edit Entry' : `➕ Add ${log.label}`;
+  document.getElementById('modal-entry-body').innerHTML = log.fields();
+  if (entry) { setTimeout(()=>log.fill(entry), 50); }
+  openModal('modal-entry');
+}
+
+function editEntry(key, id) {
+  const log = LOGS.find(l=>l.key===key);
+  const data = allData[key] || [];
+  const entry = data.find(e=>+e.id===+id);
+  if (log && entry) openEntryModal(log, entry);
+}
+
+async function saveEntry() {
+  if (!currentLog) return;
+  const data = currentLog.collect();
+  if (editingId) data.id = editingId;
+
+  try {
+    const res = await apiCall({api:'save', log:currentLog.key}, data);
+    if (res.error) { notify(res.error, true); return; }
+    closeModal('modal-entry');
+    notify(editingId ? 'Entry updated!' : 'Entry saved!');
+    openLog(currentLog.key);
+  } catch(e) {
+    notify('Save failed. Check connection.', true);
+  }
+}
+
+async function deleteEntry(key, id) {
+  if (!confirm('Delete this entry?')) return;
+  try {
+    await apiCall({api:'delete', log:key, id:id});
+    notify('Entry deleted.');
+    openLog(key);
+  } catch(e) {
+    notify('Delete failed.', true);
+  }
 }
 
 // ============================================================
 // DB MANAGER
 // ============================================================
-function openDbManager(){
-  const body=document.getElementById('modal-db-body');
-  body.innerHTML=`
+async function openDbManager() {
+  let counts = {};
+  try { counts = await apiCall({api:'counts'}); } catch(e) {}
+
+  const body = document.getElementById('modal-db-body');
+  body.innerHTML = `
     <div class="db-section">
-      <h4>Export Data</h4>
+      <h4>📊 Database Status</h4>
+      <div style="margin-bottom:12px">
+        <span class="db-status db-ok">✅ Connected to MySQL</span>
+        <span style="font-size:0.75rem;color:var(--text-muted);margin-left:10px">${DB_HOST_DISPLAY}</span>
+      </div>
       <div class="db-grid">
         ${LOGS.map(l=>`<div class="db-item">
           <div class="db-item-name">${l.icon} ${l.label}</div>
-          <div class="db-item-count">${DB.count(l.key)} entries</div>
+          <div class="db-item-count">${(counts[l.key]||0).toLocaleString()} entries</div>
           <div class="db-item-btns">
-            <button class="btn btn-teal btn-sm" onclick="exportLog('${l.key}','${l.label}')">⬇ Export CSV</button>
-          </div>
-        </div>`).join('')}
-      </div>
-      <div style="margin-top:14px">
-        <button class="btn btn-green" onclick="exportAll()">⬇ Export ALL Logs</button>
-      </div>
-    </div>
-    <div class="db-section">
-      <h4>Import Data</h4>
-      <div class="db-grid">
-        ${LOGS.map(l=>`<div class="db-item">
-          <div class="db-item-name">${l.icon} ${l.label}</div>
-          <div class="db-item-btns">
-            <label class="btn btn-purple btn-sm" style="cursor:pointer">⬆ Import CSV<input type="file" accept=".csv" style="display:none" onchange="importLog(event,'${l.key}')"></label>
+            <button class="btn btn-red btn-sm" onclick="clearLog('${l.key}','${l.label}')">🗑️ Clear</button>
           </div>
         </div>`).join('')}
       </div>
     </div>
     <div class="db-section">
       <h4>⚠️ Danger Zone</h4>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        ${LOGS.map(l=>`<button class="btn btn-red btn-sm" onclick="clearLog('${l.key}','${l.label}')">🗑️ Clear ${l.label}</button>`).join('')}
-      </div>
-      <div style="margin-top:10px">
-        <button class="btn btn-red" onclick="clearAll()">⚠️ Clear ALL Data</button>
-      </div>
+      <button class="btn btn-red" onclick="clearAll()">⚠️ Clear ALL Data</button>
     </div>`;
   openModal('modal-db');
 }
 
-function exportLog(key,label){
-  const data=DB.get(key);
-  if(!data.length){notify('No data to export for '+label,true);return;}
-  downloadCSV(data,label.replace(/\s/g,'_'));
-  notify('Exported '+data.length+' entries from '+label);
-}
-function exportAll(){
-  LOGS.forEach(l=>{ if(DB.count(l.key)>0) downloadCSV(DB.get(l.key),l.label.replace(/\s/g,'_')); });
-  notify('Exported all logs!');
-}
-function importLog(evt,key){
-  const file=evt.target.files[0];
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const rows=fromCSV(e.target.result);
-    const existing=DB.get(key);
-    rows.forEach(r=>{ r.id=Date.now()+'_'+Math.random().toString(36).slice(2); existing.push(r); });
-    DB.set(key,existing);
-    notify('Imported '+rows.length+' entries!');
-    openDbManager();
-  };
-  reader.readAsText(file);
-}
-function clearLog(key,label){
-  if(!confirm('Clear all '+label+' data? This cannot be undone.'))return;
-  DB.set(key,[]);
-  notify('Cleared '+label+' data.');
+const DB_HOST_DISPLAY = 'sql105.byethost10.com';
+
+async function clearLog(key, label) {
+  if (!confirm(`Clear all ${label} data? This cannot be undone.`)) return;
+  await apiCall({api:'clear', log:key});
+  notify('Cleared ' + label + ' data.');
   openDbManager();
+  renderMainDash();
 }
-function clearAll(){
-  if(!confirm('⚠️ Clear ALL log data? This cannot be undone!'))return;
-  LOGS.forEach(l=>DB.set(l.key,[]));
+
+async function clearAll() {
+  if (!confirm('⚠️ Clear ALL log data? This cannot be undone!')) return;
+  for (const l of LOGS) { await apiCall({api:'clear', log:l.key}); }
   notify('All data cleared.');
   openDbManager();
   renderMainDash();
 }
 
 // ============================================================
-// GEMINI CHAT
+// AI CHAT
 // ============================================================
-async function sendChat(){
-  const inp=document.getElementById('chat-input');
-  const msg=inp.value.trim();
-  if(!msg)return;
-  inp.value='';
-  addChatMsg(msg,'user');
+async function sendChat() {
+  const inp = document.getElementById('chat-input');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  addChatMsg(msg, 'user');
 
-  // Gather log summaries for context
-  const context=LOGS.map(l=>{
-    const d=DB.get(l.key);
-    return `${l.label}: ${d.length} entries. Recent: ${d.slice(-3).map(x=>JSON.stringify(x)).join('; ')}`;
-  }).join('\n');
+  // Gather log summaries
+  let context = '';
+  try {
+    const counts = await apiCall({api:'counts'});
+    context = LOGS.map(l => `${l.label}: ${counts[l.key]||0} entries`).join('\n');
+  } catch(e) { context = 'Data unavailable'; }
 
-  const thinking=addChatMsg('Thinking...','ai chat-thinking');
+  const thinking = addChatMsg('Thinking...', 'ai chat-thinking');
 
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        system:`You are a personal health and activity assistant. The user has the following log data:\n\n${context}\n\nAnswer questions about their data, provide health insights, and help them understand their patterns. Be concise and helpful.`,
-        messages:[{role:'user',content:msg}]
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are a personal health and activity assistant. The user has the following log data:\n\n${context}\n\nAnswer questions about their data, provide health insights, and help them understand their patterns. Be concise and helpful.`,
+        messages: [{role:'user', content:msg}]
       })
     });
-    const data=await resp.json();
+    const data = await resp.json();
     thinking.remove();
-    const text=data.content?.[0]?.text||'Sorry, I had trouble responding.';
-    addChatMsg(text,'ai');
-  }catch(e){
+    const text = data.content?.[0]?.text || 'Sorry, I had trouble responding.';
+    addChatMsg(text, 'ai');
+  } catch(e) {
     thinking.remove();
-    addChatMsg('Connection error. Please check your network.','ai');
+    addChatMsg('Connection error. Please check your network.', 'ai');
   }
 }
 
-function addChatMsg(text,cls){
-  const el=document.createElement('div');
-  el.className='chat-msg '+cls;
-  el.textContent=text;
-  const msgs=document.getElementById('chat-messages');
+function addChatMsg(text, cls) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg ' + cls;
+  el.textContent = text;
+  const msgs = document.getElementById('chat-messages');
   msgs.appendChild(el);
-  msgs.scrollTop=msgs.scrollHeight;
+  msgs.scrollTop = msgs.scrollHeight;
   return el;
 }
 
